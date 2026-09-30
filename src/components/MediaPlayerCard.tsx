@@ -41,15 +41,15 @@ export function MediaPlayerCard({ entity, callService }: MediaPlayerCardProps) {
   return (
     <article className="player-card">
       <div className="player-card__header"><span className="player-card__icon"><Volume2 size={18} /></span><span className={`player-card__state player-card__state--${entity.state}`}>{entity.state.replaceAll('_', ' ')}</span></div>
-      <div className="player-card__track"><strong>{title ?? playerName}</strong><span>{artist ?? entity.entity_id}</span></div>
+      <div className="player-card__track"><strong>{title ?? playerName}</strong><span>{artist ?? (playing ? 'Playing' : 'Not playing')}</span></div>
       <button className="player-card__play" type="button" disabled={busy} aria-label={playing ? `Pause ${playerName}` : `Play ${playerName}`} onClick={() => void runService('media_play_pause')}>
-        {playing ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" />}
+        {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
       </button>
       {volume !== null ? (
         <div className="player-card__volume">
-          <button type="button" title="Decrease volume" aria-label="Decrease volume" disabled={busy} onClick={() => { const nextVolume = Math.max(0, volumeValue - 0.05); setVolumeValue(nextVolume); void runService('volume_set', { volume_level: nextVolume }); }}><Minus size={14} /></button>
+          <button type="button" title="Decrease volume" aria-label="Decrease volume" disabled={busy} onClick={() => { const nextVolume = Math.max(0, volumeValue - 0.05); setVolumeValue(nextVolume); void runService('volume_set', { volume_level: nextVolume }); }}><Minus size={18} /></button>
           <input aria-label={`${playerName} volume`} type="range" min="0" max="1" step="0.01" value={volumeValue} onChange={(event) => setVolumeValue(Number(event.target.value))} onPointerUp={() => void runService('volume_set', { volume_level: volumeValue })} onKeyUp={() => void runService('volume_set', { volume_level: volumeValue })} />
-          <button type="button" title="Increase volume" aria-label="Increase volume" disabled={busy} onClick={() => { const nextVolume = Math.min(1, volumeValue + 0.05); setVolumeValue(nextVolume); void runService('volume_set', { volume_level: nextVolume }); }}><Plus size={14} /></button>
+          <button type="button" title="Increase volume" aria-label="Increase volume" disabled={busy} onClick={() => { const nextVolume = Math.min(1, volumeValue + 0.05); setVolumeValue(nextVolume); void runService('volume_set', { volume_level: nextVolume }); }}><Plus size={18} /></button>
           <span>{Math.round(volumeValue * 100)}%</span>
         </div>
       ) : null}
