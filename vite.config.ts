@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { startDarwinFeed } from './server/darwinFeed';
+import { lookupFlightRoute } from './server/flightRoute';
 import { loadRainhamBoard, type LdbBoard } from './server/ldbDepartures';
 
 interface AircraftRecord {
@@ -26,8 +27,8 @@ function aircraftProxy(latitudeValue: string, longitudeValue: string): Plugin {
     }
 
     try {
-      // ADS-B Exchange-style APIs take a nautical-mile radius. 2000 m is about 1.08 NM, so query 2 NM and keep planes inside 2000 m.
-      const url = `https://opendata.adsb.fi/api/v2/lat/${latitude}/lon/${longitude}/dist/2`;
+      // ADS-B Exchange-style APIs take a nautical-mile radius. 15 km is about 8.1 NM, so query 10 NM and keep planes inside 15 km.
+      const url = `https://opendata.adsb.fi/api/v2/lat/${latitude}/lon/${longitude}/dist/10`;
       const upstream = await fetch(url, {
         headers: { Accept: 'application/json', 'User-Agent': 'CasaMaybanksDashboard/0.1' },
         signal: AbortSignal.timeout(10_000),
@@ -37,7 +38,7 @@ function aircraftProxy(latitudeValue: string, longitudeValue: string): Plugin {
       const aircraft = (payload.ac ?? payload.aircraft ?? []).flatMap((plane) => {
         if (typeof plane.lat !== 'number' || typeof plane.lon !== 'number') return [];
         const distanceMeters = distanceBetween(latitude, longitude, plane.lat, plane.lon) * 1000;
-        if (distanceMeters > 2000) return [];
+        if (distanceMeters > 15_000) return [];
         return [{
           id: plane.hex ?? `${plane.lat},${plane.lon}`,
           callsign: plane.flight?.trim() || plane.hex || 'Unknown aircraft',
@@ -59,12 +60,28 @@ function aircraftProxy(latitudeValue: string, longitudeValue: string): Plugin {
     }
   };
 
+  const routeHandler = async (request: IncomingMessage & { originalUrl?: string }, response: ServerResponse) => {
+    const requestUrl = new URL(request.originalUrl ?? request.url ?? '', 'http://localhost');
+    try {
+      const route = await lookupFlightRoute(requestUrl.searchParams.get('callsign') ?? '');
+      response.setHeader('Content-Type', 'application/json');
+      response.setHeader('Cache-Control', 'no-store');
+      response.end(JSON.stringify(route));
+    } catch (error) {
+      response.statusCode = 502;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Route lookup failed.' }));
+    }
+  };
+
   return {
     name: 'home-aircraft-proxy',
     configureServer(server) {
+      server.middlewares.use('/api/aircraft-route', routeHandler);
       server.middlewares.use('/api/aircraft', handler);
     },
     configurePreviewServer(server) {
+      server.middlewares.use('/api/aircraft-route', routeHandler);
       server.middlewares.use('/api/aircraft', handler);
     },
   };

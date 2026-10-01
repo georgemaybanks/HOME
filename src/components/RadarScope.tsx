@@ -1,9 +1,10 @@
 import { Maximize2, Minimize2, Plane } from 'lucide-react'
 import { useState } from 'react'
 import type { AircraftStatus, NearbyAircraft } from '../hooks/useNearbyAircraft'
+import { useFlightRoute } from '../hooks/useFlightRoute'
 import { cn } from '../lib/cn'
 
-const RANGE_METERS = 2000
+const RANGE_METERS = 15_000
 
 interface RadarScopeProps {
   aircraft: NearbyAircraft[]
@@ -26,19 +27,25 @@ export const RadarScope = ({ aircraft, status, error }: RadarScopeProps) => {
   const [expanded, setExpanded] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = aircraft.find((plane) => plane.id === selectedId) ?? null
+  const route = useFlightRoute(selected?.callsign ?? null)
+  const routeText = route.status === 'loading'
+    ? 'Looking up the route…'
+    : route.origin && route.destination
+      ? `${route.origin} to ${route.destination}`
+      : 'Route not listed'
   const statusText = status === 'error'
     ? error ?? 'Aircraft lookup failed.'
     : aircraft.length
       ? null
       : status === 'ready'
-        ? 'No aircraft within 2000 m right now.'
+        ? 'No aircraft within 15 km right now.'
         : 'Checking nearby aircraft…'
 
   const scope = (
     <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', expanded && 'h-full')}>
       <div className="flex items-center gap-2.5 text-sage">
         <Plane size={22} />
-        <strong className="text-lg font-bold text-ink">Aircraft within 2000 m</strong>
+        <strong className="text-lg font-bold text-ink">Aircraft within 15 km</strong>
         <button
           className="ml-auto grid h-12 w-12 place-items-center rounded-lg bg-sage-mist text-ink"
           type="button"
@@ -49,7 +56,7 @@ export const RadarScope = ({ aircraft, status, error }: RadarScopeProps) => {
         </button>
       </div>
       <div className="relative mt-3 min-h-0 flex-1">
-        <svg viewBox="0 0 100 100" className="h-full w-full rounded-md bg-camera text-stone-300" role="img" aria-label="Radar of aircraft within 2000 metres">
+        <svg viewBox="0 0 100 100" className="h-full w-full rounded-md bg-camera text-stone-300" role="img" aria-label="Radar of aircraft within 15 kilometres">
           <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeOpacity="0.35" />
           <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeOpacity="0.35" />
           <path d="M50 10 V90 M10 50 H90" fill="none" stroke="currentColor" strokeOpacity="0.25" />
@@ -75,6 +82,7 @@ export const RadarScope = ({ aircraft, status, error }: RadarScopeProps) => {
       {selected ? (
         <button className="mt-3 rounded-md bg-sage-soft px-3 py-3 text-left" type="button" onClick={() => setSelectedId(null)}>
           <strong className="block text-lg font-bold text-ink">{selected.callsign}</strong>
+          <span className="mt-1 block text-base text-ink">{routeText}</span>
           <span className="mt-1 block text-base text-muted">
             {selected.distanceMeters.toLocaleString()} m
             {selected.altitudeFeet !== null ? ` · ${selected.altitudeFeet.toLocaleString()} ft` : ''}

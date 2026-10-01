@@ -17,7 +17,7 @@ This workspace already contains the scaffold and dependency manifest; from here,
 
 Set `VITE_HA_URL` to the Home Assistant base URL reachable by the browser and `VITE_HA_TOKEN` to a Long-Lived Access Token created in your Home Assistant profile. Never commit `.env`. The Vite `VITE_` values are included in the browser bundle, so only use this dashboard in a trusted environment and treat the token like a password.
 
-Set `HOME_LATITUDE` and `HOME_LONGITUDE` in `.env` for nearby-aircraft lookup. The local Vite server queries ADSB.fi every 30 seconds and filters aircraft to a 2000 m radius; the coordinates remain server-side. Rainham, Kent is station code `RAI`. Live departures come from the National Rail Darwin Push Port: set `DARWIN_USERNAME`, `DARWIN_PASSWORD`, `DARWIN_HOST`, `DARWIN_PORT`, `DARWIN_TOPIC`, and `DARWIN_STATUS_TOPIC` in `.env`. The Vite server subscribes to that feed and the browser only receives the Rainham board.
+Set `HOME_LATITUDE` and `HOME_LONGITUDE` in `.env` for nearby-aircraft lookup. The local Vite server queries ADSB.fi every 30 seconds and filters aircraft to a 15 km radius; the coordinates remain server-side. Rainham, Kent is station code `RAI`. Live departures come from the National Rail Darwin Push Port: set `DARWIN_USERNAME`, `DARWIN_PASSWORD`, `DARWIN_HOST`, `DARWIN_PORT`, `DARWIN_TOPIC`, and `DARWIN_STATUS_TOPIC` in `.env`. The Vite server subscribes to that feed and the browser only receives the Rainham board.
 
 ## Structure
 
