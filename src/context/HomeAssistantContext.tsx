@@ -6,7 +6,7 @@ interface HomeAssistantContextValue {
   entities: Record<string, EntityState>;
   status: ConnectionStatus;
   error: string | null;
-  callService: (domain: string, service: string, serviceData?: Record<string, unknown>) => Promise<void>;
+  callService: (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => Promise<void>;
   callServiceResult: (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => Promise<unknown>;
   command: <T>(type: string, payload?: Record<string, unknown>) => Promise<T>;
   subscribe: (type: string, payload: Record<string, unknown>, onEvent: (event: unknown) => void) => Promise<() => void>;
@@ -66,10 +66,10 @@ export function HomeAssistantProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const callService = useCallback(async (domain: string, service: string, serviceData?: Record<string, unknown>) => {
+  const callService = useCallback(async (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => {
     const client = clientRef.current;
     if (!client) throw new Error('Home Assistant is not connected.');
-    await client.callService(domain, service, serviceData);
+    await client.callService(domain, service, serviceData, target);
   }, []);
 
   const callServiceResult = useCallback(async (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => {

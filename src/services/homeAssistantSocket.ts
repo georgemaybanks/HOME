@@ -1,10 +1,18 @@
 import type { EntityState } from '../types/homeAssistant';
 
+interface HomeAssistantError {
+  code?: string;
+  message?: string;
+}
+
+const failureMessage = (error?: HomeAssistantError) => error?.message || 'Home Assistant rejected a WebSocket request.';
+
 interface HomeAssistantMessage {
   id?: number;
   type: string;
   success?: boolean;
   result?: unknown;
+  error?: HomeAssistantError;
   event?: {
     event_type?: string;
     data?: {
@@ -89,7 +97,7 @@ export class HomeAssistantSocket {
           if (subscription) {
             if (message.success === false) {
               this.subscriptions.delete(message.id);
-              subscription.onError(new Error('Home Assistant rejected a WebSocket request.'));
+              subscription.onError(new Error(failureMessage(message.error)));
             } else {
               subscription.onSubscribed();
             }
@@ -99,7 +107,7 @@ export class HomeAssistantSocket {
           if (!pending) return;
           this.pendingRequests.delete(message.id);
           if (message.success === false) {
-            pending.reject(new Error('Home Assistant rejected a WebSocket request.'));
+            pending.reject(new Error(failureMessage(message.error)));
           } else {
             pending.resolve(message.result);
           }
@@ -163,8 +171,8 @@ export class HomeAssistantSocket {
     this.socket?.send(JSON.stringify({ id: messageId, type: 'unsubscribe_events', subscription: id }));
   }
 
-  callService(domain: string, service: string, serviceData: Record<string, unknown> = {}): Promise<void> {
-    return this.request('call_service', { domain, service, service_data: serviceData }).then(() => undefined);
+  callService(domain: string, service: string, serviceData: Record<string, unknown> = {}, target?: Record<string, unknown>): Promise<void> {
+    return this.request('call_service', { domain, service, service_data: serviceData, ...(target ? { target } : {}) }).then(() => undefined);
   }
 
   callServiceResult(domain: string, service: string, serviceData: Record<string, unknown> = {}, target?: Record<string, unknown>): Promise<unknown> {
