@@ -1,6 +1,8 @@
 import { Camera, Maximize2, Minimize2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { useBlinkSnapshot } from '../hooks/useBlinkSnapshot'
 import { cn } from '../lib/cn'
+import type { CallService } from '../types/dashboard'
 import type { EntityState } from '../types/homeAssistant'
 import { CameraLive } from './CameraLive'
 
@@ -9,23 +11,26 @@ interface CameraTileProps {
   nameOnly?: boolean
   playOnPress?: boolean
   webrtc?: boolean
+  callService?: CallService
+  streamEntityId?: string
 }
 
 type PictureMode = 'stream' | 'snapshot' | 'unavailable'
 
-export function CameraTile({ entity, nameOnly = false, playOnPress = false, webrtc = false }: CameraTileProps) {
+export function CameraTile({ entity, nameOnly = false, playOnPress = false, webrtc = false, callService, streamEntityId }: CameraTileProps) {
   const imageRef = useRef<HTMLImageElement>(null)
-  const [mode, setMode] = useState<PictureMode>(playOnPress ? 'snapshot' : 'stream')
+  const { blink, waking, error, wake } = useBlinkSnapshot(entity, callService)
+  const [mode, setMode] = useState<PictureMode>(playOnPress || blink ? 'snapshot' : 'stream')
   const [frame, setFrame] = useState(0)
   const [expanded, setExpanded] = useState(false)
   const name = entity.attributes.friendly_name ?? entity.entity_id
   const encodedId = encodeURIComponent(entity.entity_id)
 
   useEffect(() => {
-    setMode(playOnPress ? 'snapshot' : 'stream')
+    setMode(playOnPress || blink ? 'snapshot' : 'stream')
     setFrame(0)
     setExpanded(false)
-  }, [entity.entity_id, playOnPress])
+  }, [blink, entity.entity_id, playOnPress])
 
   useEffect(() => {
     if (!expanded) return undefined
@@ -61,6 +66,14 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
       : undefined
 
   const togglePlayback = () => {
+    if (blink && !streamEntityId) {
+      void wake().then((awake) => {
+        if (!awake) return
+        setMode('snapshot')
+        setFrame(Date.now())
+      })
+      return
+    }
     setFrame(0)
     setMode((current) => (current === 'stream' ? 'snapshot' : 'stream'))
   }
@@ -68,10 +81,10 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
   return (
     <article className={cn('flex min-h-52 min-w-0 flex-col overflow-hidden rounded-md border border-line bg-white max-md:h-auto', expanded ? 'fixed inset-0 z-30 h-auto' : 'h-full')}>
       <div className="relative min-h-0 flex-1 overflow-hidden bg-camera max-md:aspect-video max-md:flex-none">
-        {webrtc && mode === 'stream' ? <CameraLive entityId={entity.entity_id} onError={handlePictureError} /> : null}
+        {webrtc && mode === 'stream' ? <CameraLive entityId={streamEntityId ?? entity.entity_id} onError={handlePictureError} /> : null}
         {playOnPress ? (
-          <button className={cn('block h-full w-full', webrtc && mode === 'stream' && 'absolute inset-0')} type="button" aria-pressed={mode === 'stream'} aria-label={mode === 'stream' ? `Pause ${name}` : `Play ${name}`} onClick={togglePlayback}>
-            {webrtc && mode === 'stream' ? null : webrtc ? (
+            <button className={cn('block h-full w-full', webrtc && mode === 'stream' && 'absolute inset-0')} type="button" aria-pressed={mode === 'stream'} aria-label={blink && !streamEntityId ? `Wake ${name}` : mode === 'stream' ? `Pause ${name}` : `Play ${name}`} disabled={waking} onClick={togglePlayback}>
+            {webrtc && mode === 'stream' ? null : webrtc && !streamEntityId ? (
               <span className="flex h-full min-h-52 w-full flex-col items-center justify-center gap-2 bg-camera text-stone-300">
                 <Camera size={25} strokeWidth={1.5} />
                 <span className="text-base">Tap to watch</span>
@@ -83,7 +96,7 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
         )}
         <span className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded bg-camera/80 px-2 py-1.5 font-mono text-xs text-white">
           <i className={mode === 'stream' ? 'h-2 w-2 rounded-full bg-signal' : 'h-2 w-2 rounded-full bg-orange-400'} />
-          {mode === 'stream' ? 'LIVE' : webrtc && mode !== 'unavailable' ? 'PAUSED' : mode === 'snapshot' ? 'SNAPSHOT' : 'NO IMAGE'}
+          {waking ? 'WAKING' : mode === 'stream' ? 'LIVE' : streamEntityId ? 'SNAPSHOT' : webrtc && mode !== 'unavailable' ? 'PAUSED' : mode === 'snapshot' ? 'SNAPSHOT' : 'NO IMAGE'}
         </span>
         <button className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center rounded bg-camera/80 text-white" type="button" aria-label={expanded ? `Exit full screen ${name}` : `Full screen ${name}`} onClick={() => setExpanded((current) => !current)}>
           {expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
@@ -91,6 +104,7 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
       </div>
       <div className="flex items-center justify-between gap-2.5 bg-white px-3.5 py-3">
         <strong className="truncate text-base font-semibold text-ink">{name}</strong>
+        {error ? <span className="truncate text-sm text-clay">{error}</span> : null}
         {nameOnly ? null : <span className="truncate font-mono text-xs text-muted">{entity.entity_id}</span>}
       </div>
     </article>

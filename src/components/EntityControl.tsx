@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { displayName } from '../lib/entityGroups'
 import { labelState } from '../lib/homeEntities'
 import { cn } from '../lib/cn'
@@ -18,7 +18,14 @@ export const EntityControl = ({ entity, callService }: EntityControlProps) => {
   const name = displayName(entity)
   const domain = entity.entity_id.split('.')[0]
   const unavailable = entity.state === 'unavailable'
-  const features = typeof entity.attributes.supported_features === 'number' ? entity.attributes.supported_features : 0
+  const [readyAlarm, setReadyAlarm] = useState<EntityState | null>(null)
+  const alarmOffline = domain === 'alarm_control_panel' && (entity.state === 'unavailable' || entity.state === 'unknown')
+  useEffect(() => {
+    if (domain !== 'alarm_control_panel' || alarmOffline) return
+    setReadyAlarm(entity)
+  }, [alarmOffline, domain, entity])
+  const shown = alarmOffline && readyAlarm ? readyAlarm : entity
+  const features = typeof shown.attributes.supported_features === 'number' ? shown.attributes.supported_features : 0
 
   const run = async (serviceDomain: string, service: string, serviceData: Record<string, unknown> = {}) => {
     setBusy(true)
@@ -50,11 +57,11 @@ export const EntityControl = ({ entity, callService }: EntityControlProps) => {
       </select>
     )
   } else if (domain === 'alarm_control_panel') {
-    const armed = entity.state.startsWith('armed') || entity.state === 'triggered' || entity.state === 'pending'
+    const armed = shown.state.startsWith('armed') || shown.state === 'triggered' || shown.state === 'pending'
     actions = (
       <div className="flex flex-wrap gap-2">
-        {(features & 2) !== 0 && !armed ? <button className={buttonClass} type="button" disabled={busy || unavailable} onClick={() => void run('alarm_control_panel', 'alarm_arm_away')}>Arm away</button> : null}
-        {armed ? <button className={quietClass} type="button" disabled={busy || unavailable} onClick={() => void run('alarm_control_panel', 'alarm_disarm')}>Disarm</button> : null}
+        {(features & 2) !== 0 && !armed ? <button className={buttonClass} type="button" disabled={busy || (unavailable && !readyAlarm)} onClick={() => void run('alarm_control_panel', 'alarm_arm_away')}>Arm away</button> : null}
+        {armed ? <button className={quietClass} type="button" disabled={busy || (unavailable && !readyAlarm)} onClick={() => void run('alarm_control_panel', 'alarm_disarm')}>Disarm</button> : null}
       </div>
     )
   } else if (domain === 'update' && entity.state === 'on') {
@@ -72,7 +79,8 @@ export const EntityControl = ({ entity, callService }: EntityControlProps) => {
     <article className="flex min-w-0 flex-col gap-3 rounded-md border border-line bg-white p-4">
       <div className="min-w-0">
         <strong className="block truncate text-lg font-semibold text-ink">{name}</strong>
-        <span className="mt-1 block truncate text-base text-muted">{labelState(entity.state)}</span>
+        <span className="mt-1 block truncate text-base text-muted">{labelState(shown.state)}</span>
+        {alarmOffline && readyAlarm ? <span className="mt-1 block text-sm text-muted">Blink is slow to answer. The last state is still shown.</span> : null}
       </div>
       {actions}
       {error ? <p className="text-sm text-clay" role="status">{error}</p> : null}

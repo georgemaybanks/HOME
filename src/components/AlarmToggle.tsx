@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '../lib/cn'
 import type { CallService } from '../types/dashboard'
 import type { EntityState } from '../types/homeAssistant'
@@ -10,13 +10,24 @@ interface AlarmToggleProps {
 
 const armedState = (state: string) => /^(armed|triggered|pending|arming)/.test(state)
 
+const reachable = (state: string) => state !== 'unavailable' && state !== 'unknown'
+
 export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const armed = alarm ? armedState(alarm.state) : false
+  const [lastState, setLastState] = useState<string | null>(null)
+  const live = alarm && reachable(alarm.state) ? alarm.state : null
+
+  useEffect(() => {
+    if (live) setLastState(live)
+  }, [live])
+
+  const shown = live ?? lastState
+  const armed = shown ? armedState(shown) : false
+  const waiting = Boolean(alarm && !live && shown)
 
   const toggle = async () => {
-    if (!alarm || alarm.state === 'unavailable') return
+    if (!alarm || !shown) return
     setBusy(true)
     setError(null)
     try {
@@ -36,7 +47,7 @@ export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
         role="switch"
         aria-checked={armed}
         aria-label={armed ? 'Alarm armed' : 'Alarm disarmed'}
-        disabled={!alarm || busy || alarm.state === 'unavailable'}
+        disabled={!alarm || !shown || busy}
         onClick={() => void toggle()}
         className={cn('relative mt-3 grid h-12 grid-cols-2 items-center overflow-hidden rounded-full text-base font-bold disabled:cursor-wait disabled:opacity-50', armed ? 'bg-clay text-white' : 'bg-signal text-white')}
       >
@@ -44,6 +55,7 @@ export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
         <span className={cn('relative z-10', !armed ? 'text-signal' : 'text-white')}>Disarmed</span>
         <span className={cn('relative z-10', armed ? 'text-clay' : 'text-white')}>Armed</span>
       </button>
+      {waiting ? <p className="mt-2 text-sm text-muted" role="status">Blink is slow to answer. The last state is still shown.</p> : null}
       {error ? <p className="mt-2 text-sm text-clay" role="status">{error}</p> : null}
     </article>
   )
