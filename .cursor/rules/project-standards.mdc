@@ -1,0 +1,15 @@
+---
+description: Casa Maybanks dashboard standards for React 18, Vite, and Tailwind
+alwaysApply: true
+---
+
+# Project standards
+
+- React 18 only. Do not upgrade to React 19. `@hakit/components` peers ask for React 19; keep the package installed and do not adopt it if that forces an upgrade.
+- Vite. Read env with `import.meta.env`, never `process.env` in client code.
+- Install packages with `npm install --legacy-peer-deps`.
+- Functional components and hooks only. Named exports. Components stay under 150 lines; move logic into hooks.
+- Early returns for loading and error states. `useMemo` for derived entity lists. `useCallback` for functions passed as props.
+- `React.lazy` and `Suspense` for heavy UI such as the Vanta background.
+- Tailwind utilities in components. Brand colors live in `tailwind.config.js`, not arbitrary hex classes. Conditional classes go through `cn()` in `src/lib/cn.ts`.
+- Prefer `group-hover` and `peer-focus` over new custom CSS. Keep `src/styles.css` to Tailwind directives, base document styles, and reduced-motion.

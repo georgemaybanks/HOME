@@ -19,10 +19,17 @@ interface PendingStateChange {
   state: EntityState | null;
 }
 
+interface Subscription {
+  onEvent: (event: unknown) => void;
+  onSubscribed: () => void;
+  onError: (error: Error) => void;
+}
+
 export class HomeAssistantSocket {
   private socket: WebSocket | null = null;
   private nextId = 1;
   private pendingRequests = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
+  private subscriptions = new Map<number, Subscription>();
   private pendingStateChanges: PendingStateChange[] = [];
   private ready = false;
 
@@ -78,6 +85,16 @@ export class HomeAssistantSocket {
         }
 
         if (message.type === 'result' && message.id !== undefined) {
+          const subscription = this.subscriptions.get(message.id);
+          if (subscription) {
+            if (message.success === false) {
+              this.subscriptions.delete(message.id);
+              subscription.onError(new Error('Home Assistant rejected a WebSocket request.'));
+            } else {
+              subscription.onSubscribed();
+            }
+            return;
+          }
           const pending = this.pendingRequests.get(message.id);
           if (!pending) return;
           this.pendingRequests.delete(message.id);
@@ -87,6 +104,14 @@ export class HomeAssistantSocket {
             pending.resolve(message.result);
           }
           return;
+        }
+
+        if (message.type === 'event' && message.id !== undefined) {
+          const subscription = this.subscriptions.get(message.id);
+          if (subscription) {
+            subscription.onEvent(message.event);
+            return;
+          }
         }
 
         if (message.type === 'event' && message.event?.event_type === 'state_changed') {
@@ -112,10 +137,38 @@ export class HomeAssistantSocket {
     this.socket = null;
     this.pendingRequests.forEach(({ reject }) => reject(new Error('Home Assistant connection closed.')));
     this.pendingRequests.clear();
+    this.subscriptions.forEach((subscription) => subscription.onError(new Error('Home Assistant connection closed.')));
+    this.subscriptions.clear();
+  }
+
+  command<T>(type: string, payload: Record<string, unknown> = {}): Promise<T> {
+    return this.request<T>(type, payload);
+  }
+
+  subscribe(type: string, payload: Record<string, unknown>, onEvent: (event: unknown) => void): Promise<() => void> {
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.subscriptions.set(id, {
+        onEvent,
+        onSubscribed: () => resolve(() => this.unsubscribe(id)),
+        onError: reject,
+      });
+      this.socket?.send(JSON.stringify({ id, type, ...payload }));
+    });
+  }
+
+  private unsubscribe(id: number): void {
+    if (!this.subscriptions.delete(id)) return;
+    const messageId = this.nextId++;
+    this.socket?.send(JSON.stringify({ id: messageId, type: 'unsubscribe_events', subscription: id }));
   }
 
   callService(domain: string, service: string, serviceData: Record<string, unknown> = {}): Promise<void> {
     return this.request('call_service', { domain, service, service_data: serviceData }).then(() => undefined);
+  }
+
+  callServiceResult(domain: string, service: string, serviceData: Record<string, unknown> = {}, target?: Record<string, unknown>): Promise<unknown> {
+    return this.request('call_service', { domain, service, service_data: serviceData, target, return_response: true });
   }
 
   private async initialize(): Promise<void> {

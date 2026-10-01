@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { HomeAssistantSocket } from '../services/homeAssistantSocket';
 import type { ConnectionStatus, EntityState } from '../types/homeAssistant';
 
@@ -7,6 +7,9 @@ interface HomeAssistantContextValue {
   status: ConnectionStatus;
   error: string | null;
   callService: (domain: string, service: string, serviceData?: Record<string, unknown>) => Promise<void>;
+  callServiceResult: (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => Promise<unknown>;
+  command: <T>(type: string, payload?: Record<string, unknown>) => Promise<T>;
+  subscribe: (type: string, payload: Record<string, unknown>, onEvent: (event: unknown) => void) => Promise<() => void>;
 }
 
 export const HomeAssistantContext = createContext<HomeAssistantContextValue | null>(null);
@@ -63,14 +66,32 @@ export function HomeAssistantProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const callService = async (domain: string, service: string, serviceData?: Record<string, unknown>) => {
+  const callService = useCallback(async (domain: string, service: string, serviceData?: Record<string, unknown>) => {
     const client = clientRef.current;
     if (!client) throw new Error('Home Assistant is not connected.');
     await client.callService(domain, service, serviceData);
-  };
+  }, []);
+
+  const callServiceResult = useCallback(async (domain: string, service: string, serviceData?: Record<string, unknown>, target?: Record<string, unknown>) => {
+    const client = clientRef.current;
+    if (!client) throw new Error('Home Assistant is not connected.');
+    return client.callServiceResult(domain, service, serviceData, target);
+  }, []);
+
+  const command = useCallback(<T,>(type: string, payload?: Record<string, unknown>) => {
+    const client = clientRef.current;
+    if (!client) return Promise.reject(new Error('Home Assistant is not connected.'));
+    return client.command<T>(type, payload);
+  }, []);
+
+  const subscribe = useCallback((type: string, payload: Record<string, unknown>, onEvent: (event: unknown) => void) => {
+    const client = clientRef.current;
+    if (!client) return Promise.reject(new Error('Home Assistant is not connected.'));
+    return client.subscribe(type, payload, onEvent);
+  }, []);
 
   return (
-    <HomeAssistantContext.Provider value={{ entities, status, error, callService }}>
+    <HomeAssistantContext.Provider value={{ entities, status, error, callService, callServiceResult, command, subscribe }}>
       {children}
     </HomeAssistantContext.Provider>
   );

@@ -1,63 +1,31 @@
 import { BatteryCharging } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { chargerEntityName, chargerUnit, formatChargerPower, isChargerControl, isChargerCurrentLimit, isChargerPower, numericAttribute } from '../lib/charger';
+import { cn } from '../lib/cn';
+import type { CallService } from '../types/dashboard';
 import type { EntityState } from '../types/homeAssistant';
 
 interface ChargerPanelProps {
   entities: EntityState[];
-  callService: (domain: string, service: string, serviceData?: Record<string, unknown>) => Promise<void>;
+  callService: CallService;
 }
 
-function entityName(entity: EntityState) {
-  return entity.attributes.friendly_name ?? 'Charger';
-}
-
-function unitOf(entity: EntityState) {
-  return typeof entity.attributes.unit_of_measurement === 'string' ? entity.attributes.unit_of_measurement : '';
-}
-
-function formatPower(entity: EntityState) {
-  const unit = unitOf(entity);
-  const value = Number(entity.state);
-  if (Number.isNaN(value)) return entity.state;
-  if (unit === 'W') return `${(value / 1000).toFixed(1)} kW`;
-  if (unit === 'kW') return `${value.toFixed(1)} kW`;
-  return `${entity.state}${unit ? ` ${unit}` : ''}`;
-}
-
-function isPower(entity: EntityState) {
-  const unit = unitOf(entity);
-  return entity.entity_id.startsWith('sensor.') && (unit === 'W' || unit === 'kW');
-}
-
-function isCurrentLimit(entity: EntityState) {
-  return entity.entity_id.startsWith('number.') && (unitOf(entity) === 'A' || /current|amp|limit/i.test(`${entity.entity_id} ${entityName(entity)}`));
-}
-
-function isControl(entity: EntityState) {
-  return entity.entity_id.startsWith('switch.') || entity.entity_id.startsWith('input_boolean.') || entity.entity_id.startsWith('button.');
-}
-
-function numericAttribute(entity: EntityState | undefined, key: string, fallback: number) {
-  const value = entity?.attributes[key];
-  return typeof value === 'number' ? value : fallback;
-}
-
-export function ChargerPanel({ entities, callService }: ChargerPanelProps) {
+export const ChargerPanel = ({ entities, callService }: ChargerPanelProps) => {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const power = entities.find(isPower);
-  const limit = entities.find(isCurrentLimit);
-  const controls = entities.filter(isControl);
+  const power = entities.find(isChargerPower);
+  const limit = entities.find(isChargerCurrentLimit);
+  const controls = entities.filter(isChargerControl);
   const mode = entities.find((entity) => entity.entity_id.startsWith('select.') && Array.isArray(entity.attributes.options));
   const modeOptions = Array.isArray(mode?.attributes.options) ? mode.attributes.options.filter((option): option is string => typeof option === 'string') : [];
-  const chargingSensor = entities.find((entity) => entity.entity_id.startsWith('binary_sensor.') && /charg/i.test(`${entity.entity_id} ${entityName(entity)}`));
+  const chargingSensor = entities.find((entity) => entity.entity_id.startsWith('binary_sensor.') && /charg/i.test(`${entity.entity_id} ${chargerEntityName(entity)}`));
   const mainSwitch = controls.find((entity) => {
-    const name = `${entity.entity_id} ${entityName(entity)}`.toLowerCase();
+    const name = `${entity.entity_id} ${chargerEntityName(entity)}`.toLowerCase();
     return (entity.entity_id.startsWith('switch.') || entity.entity_id.startsWith('input_boolean.')) && /charg|boost|enabled|start/.test(name) && !/pause|lock/.test(name);
   }) ?? controls.find((entity) => entity.entity_id.startsWith('switch.') || entity.entity_id.startsWith('input_boolean.'));
   const charging = chargingSensor ? chargingSensor.state === 'on' : mainSwitch ? mainSwitch.state === 'on' : false;
   const statusLabel = chargingSensor || mainSwitch ? (charging ? 'Charging' : 'Idle') : 'Ready';
-  const details = entities.filter((entity) => entity !== power && entity !== limit && entity !== mode && !isControl(entity) && (entity.entity_id.startsWith('sensor.') || entity.entity_id.startsWith('binary_sensor.')));
+  const details = entities.filter((entity) => entity !== power && entity !== limit && entity !== mode && !isChargerControl(entity) && (entity.entity_id.startsWith('sensor.') || entity.entity_id.startsWith('binary_sensor.')));
   const limitValue = limit ? Number(limit.state) : null;
   const [amps, setAmps] = useState(() => {
     const initial = limit ? Number(limit.state) : Number.NaN;
@@ -80,39 +48,41 @@ export function ChargerPanel({ entities, callService }: ChargerPanelProps) {
     }
   };
 
+  const isCharging = charging
+
   return (
-    <div className="charger-board">
-      <article className={`charger-hero${charging ? ' charger-hero--active' : ''}`}>
-        <span className="charger-hero__icon" aria-hidden="true"><BatteryCharging size={28} /></span>
-        <p className="stat__label">CAR CHARGER</p>
-        <p className={`stat__value${charging ? ' stat__value--calm' : ''}`}>{statusLabel}</p>
-        <p className="stat__value stat__value--figure">{power ? formatPower(power) : '—'}</p>
-        <p className="stat__note">{power ? entityName(power) : 'Power shows here when a charger sensor is available.'}</p>
+    <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 max-md:grid-cols-1">
+      <article className={cn('min-h-0 min-w-0 overflow-auto rounded-md border border-line bg-white p-5', isCharging && 'border-sage/40 bg-sage-soft/60')}>
+        <span className={cn('mb-4 grid h-14 w-14 place-items-center rounded-md bg-sage-soft text-sage', isCharging && 'bg-sage text-paper')} aria-hidden="true"><BatteryCharging size={28} /></span>
+        <p className="font-mono text-xs font-medium tracking-wide text-muted">CAR CHARGER</p>
+        <p className={cn('mt-2 font-display text-3xl font-bold leading-tight', isCharging && 'text-signal')}>{statusLabel}</p>
+        <p className="mt-2 font-display text-clock font-bold">{power ? formatChargerPower(power) : '—'}</p>
+        <p className="mt-2.5 line-clamp-2 text-base text-muted">{power ? chargerEntityName(power) : 'Power shows here when a charger sensor is available.'}</p>
       </article>
 
-      <div className="charger-controls">
+      <div className="flex min-h-0 min-w-0 flex-col gap-3 overflow-auto rounded-md border border-line bg-white p-5">
         {controls.map((entity) => {
           const domain = entity.entity_id.split('.')[0];
           const on = entity.state === 'on';
           const busy = busyId === entity.entity_id;
           if (domain === 'button') {
             return (
-              <button key={entity.entity_id} className="charger-action" type="button" disabled={busy} onClick={() => void run(entity, 'button', 'press')}>
-                {entityName(entity)}
+              <button key={entity.entity_id} className="min-h-16 rounded-md bg-sage-soft text-lg font-bold text-sage-deep disabled:cursor-wait disabled:opacity-50" type="button" disabled={busy} onClick={() => void run(entity, 'button', 'press')}>
+                {chargerEntityName(entity)}
               </button>
             );
           }
           return (
-            <button key={entity.entity_id} className={`charger-action${on ? ' charger-action--on' : ''}`} type="button" aria-pressed={on} disabled={busy || entity.state === 'unavailable'} onClick={() => void run(entity, domain, on ? 'turn_off' : 'turn_on')}>
-              {on ? `Stop ${entityName(entity)}` : `Start ${entityName(entity)}`}
+            <button key={entity.entity_id} className={cn('min-h-16 rounded-md bg-sage-soft text-lg font-bold text-sage-deep disabled:cursor-wait disabled:opacity-50', on && 'bg-sage text-paper')} type="button" aria-pressed={on} disabled={busy || entity.state === 'unavailable'} onClick={() => void run(entity, domain, on ? 'turn_off' : 'turn_on')}>
+              {on ? `Stop ${chargerEntityName(entity)}` : `Start ${chargerEntityName(entity)}`}
             </button>
           );
         })}
 
         {mode && modeOptions.length ? (
-          <div className="charger-modes" role="group" aria-label={entityName(mode)}>
+          <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1" role="group" aria-label={chargerEntityName(mode)}>
             {modeOptions.slice(0, 6).map((option) => (
-              <button key={option} className={`charger-action${mode.state === option ? ' charger-action--on' : ''}`} type="button" aria-pressed={mode.state === option} disabled={busyId === mode.entity_id} onClick={() => void run(mode, 'select', 'select_option', { option })}>
+              <button key={option} className={cn('min-h-16 rounded-md bg-sage-soft text-lg font-bold text-sage-deep disabled:cursor-wait disabled:opacity-50', mode.state === option && 'bg-sage text-paper')} type="button" aria-pressed={mode.state === option} disabled={busyId === mode.entity_id} onClick={() => void run(mode, 'select', 'select_option', { option })}>
                 {option}
               </button>
             ))}
@@ -120,10 +90,11 @@ export function ChargerPanel({ entities, callService }: ChargerPanelProps) {
         ) : null}
 
         {limit ? (
-          <label className="charger-limit">
+          <label className="grid min-h-16 grid-cols-[auto_1fr_auto] items-center gap-3 text-base text-sage-deep">
             Charge current
             <input
-              aria-label={`${entityName(limit)} current`}
+              aria-label={`${chargerEntityName(limit)} current`}
+              className="h-12 min-w-0 accent-signal"
               type="range"
               min={numericAttribute(limit, 'min', 6)}
               max={numericAttribute(limit, 'max', 32)}
@@ -134,23 +105,23 @@ export function ChargerPanel({ entities, callService }: ChargerPanelProps) {
               onPointerUp={() => void run(limit, 'number', 'set_value', { value: amps })}
               onKeyUp={() => void run(limit, 'number', 'set_value', { value: amps })}
             />
-            <span>{amps} A</span>
+            <span className="min-w-12 text-right font-mono">{amps} A</span>
           </label>
         ) : null}
 
         {details.length ? (
-          <div className="travel-panel__entities">
+          <div>
             {details.map((entity) => (
-              <div className="travel-entity" key={entity.entity_id}>
-                <span>{entityName(entity)}</span>
-                <strong>{entity.state}{unitOf(entity) ? ` ${unitOf(entity)}` : ''}</strong>
+              <div className="flex min-h-11 items-center justify-between gap-3 border-t border-line/70 py-2" key={entity.entity_id}>
+                <span className="truncate text-base text-ink">{chargerEntityName(entity)}</span>
+                <strong className="shrink-0 font-mono text-base">{entity.state}{chargerUnit(entity) ? ` ${chargerUnit(entity)}` : ''}</strong>
               </div>
             ))}
           </div>
         ) : null}
 
-        {!controls.length && !mode ? <p>No start or stop control was found. A charger switch in Home Assistant will appear here as a button.</p> : null}
-        {error ? <p className="player-card__error" role="status">{error}</p> : null}
+        {!controls.length && !mode ? <p className="text-base leading-snug text-muted">No start or stop control was found. A charger switch in Home Assistant will appear here as a button.</p> : null}
+        {error ? <p className="text-sm text-clay" role="status">{error}</p> : null}
       </div>
     </div>
   );

@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 export interface NearbyAircraft {
   id: string;
   callsign: string;
-  distanceMiles: number;
+  distanceMeters: number;
+  bearingDegrees: number;
   altitudeFeet: number | null;
   speedKnots: number | null;
   headingDegrees: number | null;

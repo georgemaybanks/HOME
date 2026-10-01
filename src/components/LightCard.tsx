@@ -1,10 +1,12 @@
 import { Lightbulb } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { cn } from '../lib/cn';
+import type { CallService } from '../types/dashboard';
 import type { EntityState } from '../types/homeAssistant';
 
 interface LightCardProps {
   entity: EntityState;
-  callService: (domain: string, service: string, serviceData?: Record<string, unknown>) => Promise<void>;
+  callService: CallService;
 }
 
 function brightnessPercent(entity: EntityState) {
@@ -23,8 +25,8 @@ export function LightCard({ entity, callService }: LightCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const name = entity.attributes.friendly_name ?? 'Light';
-  const on = entity.state === 'on';
-  const unavailable = entity.state === 'unavailable' || entity.state === 'unknown';
+  const isOn = entity.state === 'on';
+  const isUnavailable = entity.state === 'unavailable';
   const dimmable = canDim(entity);
   const reportedBrightness = brightnessPercent(entity);
   const [brightness, setBrightness] = useState(reportedBrightness ?? 100);
@@ -46,36 +48,55 @@ export function LightCard({ entity, callService }: LightCardProps) {
   };
 
   return (
-    <article className={`light-card${on ? ' light-card--on' : ''}`}>
-      <div className="light-card__top">
-        <span className="light-card__icon" aria-hidden="true"><Lightbulb size={22} /></span>
-        <div>
-          <strong>{name}</strong>
-          <span>{unavailable ? 'Unavailable' : on ? 'On' : 'Off'}</span>
+    <article className={cn('flex min-w-0 flex-col gap-3.5 rounded-md border border-line bg-white p-4', isOn && 'border-sage/40 bg-sage-soft/60')}>
+      <div className="flex min-w-0 items-center gap-3.5">
+        <span className={cn('grid h-12 w-12 shrink-0 place-items-center rounded bg-sage-soft text-sage', isOn && 'bg-sage text-paper')} aria-hidden="true"><Lightbulb size={22} /></span>
+        <div className="min-w-0">
+          <strong className="block truncate text-lg font-semibold text-ink">{name}</strong>
+          <span className="mt-1 block truncate text-base text-muted">{isUnavailable ? 'Unavailable' : isOn ? 'On' : 'Off'}</span>
         </div>
       </div>
-      <button className="light-card__toggle" type="button" aria-pressed={on} disabled={busy || unavailable} onClick={() => void run(on ? 'turn_off' : 'turn_on')}>
-        {on ? 'Turn off' : 'Turn on'}
+      <button className={cn('min-h-16 rounded-md bg-sage-soft text-lg font-bold text-sage-deep disabled:cursor-wait disabled:opacity-50', isOn && 'bg-sage text-paper')} type="button" aria-pressed={isOn} disabled={busy || isUnavailable} onClick={() => void run(isOn ? 'turn_off' : 'turn_on')}>
+        {isOn ? 'Turn off' : 'Turn on'}
       </button>
+      {Array.isArray(entity.attributes.supported_color_modes) && entity.attributes.supported_color_modes.includes('rgb') ? (
+        <label className="flex items-center justify-between gap-3 text-base text-sage-deep">
+          Colour
+          <input
+            className="h-12 w-16 cursor-pointer bg-transparent"
+            aria-label={`${name} colour`}
+            type="color"
+            disabled={busy || isUnavailable}
+            onChange={(event) => {
+              const hex = event.target.value;
+              const red = Number.parseInt(hex.slice(1, 3), 16);
+              const green = Number.parseInt(hex.slice(3, 5), 16);
+              const blue = Number.parseInt(hex.slice(5, 7), 16);
+              void run('turn_on', { rgb_color: [red, green, blue] });
+            }}
+          />
+        </label>
+      ) : null}
       {dimmable ? (
-        <label className="light-card__dim">
+        <label className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-base text-sage-deep">
           Brightness
           <input
+            className="h-12 min-w-0 accent-signal"
             aria-label={`${name} brightness`}
             type="range"
             min={1}
             max={100}
             step={1}
             value={brightness}
-            disabled={busy || unavailable}
+            disabled={busy || isUnavailable}
             onChange={(event) => setBrightness(Number(event.target.value))}
             onPointerUp={() => void run('turn_on', { brightness_pct: brightness })}
             onKeyUp={() => void run('turn_on', { brightness_pct: brightness })}
           />
-          <span>{brightness}%</span>
+          <span className="min-w-12 text-right font-mono">{brightness}%</span>
         </label>
       ) : null}
-      {error ? <p className="light-card__error" role="status">{error}</p> : null}
+      {error ? <p className="text-sm text-clay" role="status">{error}</p> : null}
     </article>
   );
 }
