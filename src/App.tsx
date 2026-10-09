@@ -3,18 +3,24 @@ import { CameraBoard } from './components/CameraBoard';
 import { CleaningBoard } from './components/CleaningBoard';
 import { DashboardDock } from './components/DashboardDock';
 import { DashboardTopBar } from './components/DashboardTopBar';
+import { EnergyBoard } from './components/EnergyBoard';
 import { GlanceView } from './components/GlanceView';
 import { LightBoard } from './components/LightBoard';
+import { ParcelsBoard } from './components/ParcelsBoard';
 import { RadarScope } from './components/RadarScope';
 import { SectionBoard } from './components/SectionBoard';
 import { SpeakerBoard } from './components/SpeakerBoard';
 import { useDashboardData } from './hooks/useDashboardData';
+import { useEnergy } from './hooks/useEnergy';
+import { useParcels } from './hooks/useParcels';
 import type { DashboardTab } from './types/dashboard';
 
 const VantaBackground = lazy(() => import('./components/VantaBackground.jsx').then((module) => ({ default: module.VantaBackground })));
 
 export const App = () => {
   const dashboard = useDashboardData();
+  const parcels = useParcels();
+  const energy = useEnergy();
   const [tab, setTab] = useState<DashboardTab>('overview');
   const selectTab = useCallback((nextTab: DashboardTab) => setTab(nextTab), []);
   const showHome = useCallback(() => setTab('overview'), []);
@@ -35,17 +41,26 @@ export const App = () => {
             {dashboard.error ? <div className="border-l-4 border-clay bg-orange-50 px-3.5 py-3 text-base text-clay" role="status">{dashboard.error}</div> : null}
             {tab === 'overview' ? (
               <GlanceView
-                camera={dashboard.noahCamera}
                 alarm={dashboard.primaryAlarm}
                 callService={dashboard.callService}
                 outsideTemperature={dashboard.outsideTemperature}
                 insideTemperature={dashboard.insideTemperature}
                 overnightLow={dashboard.overnightLow}
+                weatherLabel={dashboard.weatherLabel}
+                sunLabel={dashboard.sunLabel}
+                lights={dashboard.lightEntities}
                 roborockEntities={dashboard.roborockEntities}
                 departures={dashboard.departures}
                 railStatus={dashboard.railStatus}
                 railError={dashboard.railError}
                 railNotice={dashboard.railNotice}
+                parcels={parcels.summary}
+                parcelStatus={parcels.status}
+                parcelError={parcels.error}
+                onOpenParcels={() => setTab('parcels')}
+                energyToday={energy.today}
+                energyNotice={energy.notice}
+                onOpenEnergy={() => setTab('energy')}
               />
             ) : null}
             {tab === 'cameras' ? <CameraBoard cameras={dashboard.cameraEntities} controls={dashboard.cameraControls} callService={dashboard.callService} /> : null}
@@ -73,6 +88,8 @@ export const App = () => {
             {tab === 'buttons' ? (
               <SectionBoard label="Buttons" callService={dashboard.callService} sections={[{ title: 'Routines and device buttons', entities: dashboard.buttonEntities, kind: 'action' }]} />
             ) : null}
+            {tab === 'energy' ? <EnergyBoard today={energy.today} week={energy.week} notice={energy.notice} /> : null}
+            {tab === 'parcels' ? <ParcelsBoard url={parcels.summary?.boardUrl ?? null} /> : null}
             {tab === 'house' ? (
               <SectionBoard
                 label="House"

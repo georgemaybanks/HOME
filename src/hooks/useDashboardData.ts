@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { groupEntities } from '../lib/entityGroups'
-import { matchesWords, networkSummary, sensorTemperature, weatherTemperature } from '../lib/homeEntities'
+import { matchesWords, networkSummary, sensorTemperature, sunLine, weatherCondition, weatherTemperature } from '../lib/homeEntities'
 import type { EntityState } from '../types/homeAssistant'
+import { useBlinkAlarmRecovery } from './useBlinkAlarmRecovery'
 import { useClock } from './useClock'
 import { useHomeAssistant } from './useHomeAssistant'
 import { useNearbyAircraft } from './useNearbyAircraft'
@@ -12,6 +13,7 @@ const byName = (entity: EntityState) => entity.attributes.friendly_name ?? entit
 
 export const useDashboardData = () => {
   const { entities, status, error, callService } = useHomeAssistant()
+  useBlinkAlarmRecovery(entities['alarm_control_panel.blink_home'])
   const aircraftState = useNearbyAircraft()
   const rail = useRailBoard()
   const overnightLow = useOvernightLow(status)
@@ -46,13 +48,15 @@ export const useDashboardData = () => {
       controlEntities: grouped.controls,
       houseSensors: grouped.houseSensors,
       houseUpdates: grouped.houseUpdates,
-      houseLists: grouped.houseLists,
+      houseLists: grouped.houseLists.filter((entity) => !/shopping/i.test(`${entity.entity_id} ${entity.attributes.friendly_name ?? ''}`)),
       houseOther: grouped.houseOther,
       noahCamera,
       primaryAlarm,
       roborockEntities,
       outsideTemperature: weatherTemperature(entities['weather.forecast_home']),
       insideTemperature: sensorTemperature(entities['sensor.noah_noahs_camera_temperature']),
+      weatherLabel: weatherCondition(entities['weather.forecast_home']),
+      sunLabel: sunLine(entities['sun.sun']),
       ...networkSummary(entityList),
     }
   }, [entities])

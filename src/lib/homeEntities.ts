@@ -23,6 +23,22 @@ export const sensorTemperature = (entity: EntityState | undefined) => {
   return formatDegrees(value, unit)
 }
 
+export const weatherCondition = (entity: EntityState | undefined) => {
+  if (!entity || entity.state === 'unavailable' || entity.state === 'unknown') return null
+  return labelState(entity.state)
+}
+
+export const sunLine = (entity: EntityState | undefined) => {
+  if (!entity || entity.state === 'unavailable' || entity.state === 'unknown') return null
+  const setting = entity.state === 'below_horizon'
+  const raw = entity.attributes[setting ? 'next_rising' : 'next_setting']
+  if (typeof raw !== 'string') return null
+  const time = new Date(raw)
+  if (Number.isNaN(time.getTime())) return null
+  const clock = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return setting ? `Sunrise ${clock}` : `Sunset ${clock}`
+}
+
 export const weatherTemperature = (entity: EntityState | undefined) => {
   if (!entity || typeof entity.attributes.temperature !== 'number') return null
   const unit = typeof entity.attributes.temperature_unit === 'string' ? entity.attributes.temperature_unit : '°C'

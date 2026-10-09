@@ -1,4 +1,4 @@
-import { Camera, CloudSun, House, LayoutGrid, Lightbulb, ListChecks, Music2, Plane, Shield, Sparkles } from 'lucide-react'
+import { Camera, CloudSun, House, LayoutGrid, Lightbulb, ListChecks, Music2, Package, Plane, Shield, Sparkles, Zap } from 'lucide-react'
 import type { DashboardTab } from '../types/dashboard'
 import { cn } from '../lib/cn'
 
@@ -13,15 +13,17 @@ const dockItems: { id: DashboardTab; label: string; icon: typeof House }[] = [
   { id: 'lights', label: 'Lights', icon: Lightbulb },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'climate', label: 'Climate', icon: CloudSun },
+  { id: 'energy', label: 'Energy', icon: Zap },
   { id: 'cleaning', label: 'Clean', icon: Sparkles },
   { id: 'aircraft', label: 'Aircraft', icon: Plane },
   { id: 'speakers', label: 'Audio', icon: Music2 },
   { id: 'buttons', label: 'Buttons', icon: ListChecks },
   { id: 'house', label: 'House', icon: LayoutGrid },
+  { id: 'parcels', label: 'Parcels', icon: Package },
 ]
 
 export const DashboardDock = ({ tab, onSelectTab }: DashboardDockProps) => (
-  <nav className="grid grid-cols-10 border-t border-sage-line bg-sage-mist max-md:sticky max-md:bottom-0" aria-label="Main navigation">
+  <nav className="grid grid-cols-12 border-t border-sage-line bg-sage-mist max-md:sticky max-md:bottom-0" aria-label="Main navigation">
     {dockItems.map((item) => {
       const Icon = item.icon
       const isSelected = tab === item.id

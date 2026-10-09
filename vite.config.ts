@@ -201,6 +201,45 @@ function railProxy(env: Record<string, string>): Plugin {
   };
 }
 
+function parcelsProxy(env: Record<string, string>): Plugin {
+  const base = (env.PARCELS_URL || '').replace(/\/$/, '');
+  const passphrase = env.PARCELS_PASSPHRASE || '';
+  const handler = async (_request: IncomingMessage, response: ServerResponse) => {
+    if (!base || !passphrase) {
+      response.statusCode = 503;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ error: 'Set PARCELS_URL and PARCELS_PASSPHRASE in the Home dashboard .env.' }));
+      return;
+    }
+
+    try {
+      const upstream = await fetch(`${base}/api/summary`, {
+        headers: { Accept: 'application/json', 'X-App-Passphrase': passphrase },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const payload = await upstream.json() as Record<string, unknown>;
+      response.statusCode = upstream.ok ? 200 : upstream.status;
+      response.setHeader('Content-Type', 'application/json');
+      response.setHeader('Cache-Control', 'no-store');
+      response.end(JSON.stringify(upstream.ok ? { ...payload, boardUrl: base } : { error: 'The parcel dashboard refused the request.' }));
+    } catch (error) {
+      response.statusCode = 502;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Parcel dashboard request failed.' }));
+    }
+  };
+
+  return {
+    name: 'parcels-summary',
+    configureServer(server) {
+      server.middlewares.use('/api/parcels', handler);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use('/api/parcels', handler);
+    },
+  };
+}
+
 function bearingBetween(latitudeOne: number, longitudeOne: number, latitudeTwo: number, longitudeTwo: number) {
   const toRadians = (degrees: number) => degrees * Math.PI / 180;
   const latitudeOneRadians = toRadians(latitudeOne);
@@ -224,6 +263,6 @@ function distanceBetween(latitudeOne: number, longitudeOne: number, latitudeTwo:
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env)],
+    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env), parcelsProxy(env)],
   };
 });
