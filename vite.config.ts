@@ -202,10 +202,21 @@ function railProxy(env: Record<string, string>): Plugin {
   };
 }
 
+const browserBoardUrl = (requestHost: string | undefined, base: string) => {
+  const target = new URL(base);
+  const loopback = target.hostname === 'localhost' || target.hostname === '127.0.0.1' || target.hostname === '::1';
+  const header = requestHost ?? '';
+  const hostname = header.startsWith('[') ? header.slice(1, header.indexOf(']')) : header.split(':')[0];
+  const browserIsLocal = !hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  if (!loopback || browserIsLocal) return target.toString().replace(/\/$/, '');
+  target.hostname = hostname;
+  return target.toString().replace(/\/$/, '');
+};
+
 function parcelsProxy(env: Record<string, string>): Plugin {
   const base = (env.PARCELS_URL || '').replace(/\/$/, '');
   const passphrase = env.PARCELS_PASSPHRASE || '';
-  const handler = async (_request: IncomingMessage, response: ServerResponse) => {
+  const handler = async (request: IncomingMessage, response: ServerResponse) => {
     if (!base || !passphrase) {
       response.statusCode = 503;
       response.setHeader('Content-Type', 'application/json');
@@ -222,7 +233,7 @@ function parcelsProxy(env: Record<string, string>): Plugin {
       response.statusCode = upstream.ok ? 200 : upstream.status;
       response.setHeader('Content-Type', 'application/json');
       response.setHeader('Cache-Control', 'no-store');
-      response.end(JSON.stringify(upstream.ok ? { ...payload, boardUrl: base } : { error: 'The parcel dashboard refused the request.' }));
+      response.end(JSON.stringify(upstream.ok ? { ...payload, boardUrl: browserBoardUrl(request.headers.host, base) } : { error: 'The parcel dashboard refused the request.' }));
     } catch (error) {
       response.statusCode = 502;
       response.setHeader('Content-Type', 'application/json');
