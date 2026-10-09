@@ -37,7 +37,7 @@ export const App = () => {
             connectionLabel={dashboard.connectionLabel}
             onGoHome={showHome}
           />
-          <div className="flex min-h-0 flex-col gap-3 px-5 pb-3 pt-4">
+          <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden px-5 pb-3 pt-4 max-md:h-auto max-md:overflow-visible max-md:pb-20">
             {dashboard.error ? <div className="border-l-4 border-clay bg-orange-50 px-3.5 py-3 text-base text-clay" role="status">{dashboard.error}</div> : null}
             {tab === 'overview' ? (
               <GlanceView
@@ -88,7 +88,7 @@ export const App = () => {
             {tab === 'buttons' ? (
               <SectionBoard label="Buttons" callService={dashboard.callService} sections={[{ title: 'Routines and device buttons', entities: dashboard.buttonEntities, kind: 'action' }]} />
             ) : null}
-            {tab === 'energy' ? <EnergyBoard today={energy.today} week={energy.week} notice={energy.notice} /> : null}
+            {tab === 'energy' ? <EnergyBoard today={energy.today} week={energy.week} months={energy.months} averageMonthly={energy.averageMonthly} notice={energy.notice} /> : null}
             {tab === 'parcels' ? <ParcelsBoard url={parcels.summary?.boardUrl ?? null} /> : null}
             {tab === 'house' ? (
               <SectionBoard

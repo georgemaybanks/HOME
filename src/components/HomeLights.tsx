@@ -29,7 +29,7 @@ export const HomeLights = ({ lights, callService }: HomeLightsProps) => {
   }
 
   return (
-    <article className="rounded-md border border-line bg-white px-4 py-3">
+    <article className="h-full rounded-md border border-line bg-white px-4 py-3">
       <div className="flex items-center gap-2.5 text-sage">
         <Lightbulb size={22} />
         <strong className="text-lg font-bold text-ink">Lights</strong>

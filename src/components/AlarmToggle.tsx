@@ -40,7 +40,7 @@ export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
   }
 
   return (
-    <article className="flex min-w-0 flex-col justify-center rounded-md border border-line bg-white px-4 py-4">
+    <article className="flex h-full min-w-0 flex-col justify-center rounded-md border border-line bg-white px-4 py-4">
       <span className="font-mono text-xs font-medium tracking-wide text-muted">ALARM</span>
       <button
         type="button"

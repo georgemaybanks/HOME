@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { startDarwinFeed } from './server/darwinFeed';
+import { energyHistoryPlugin } from './server/energyHistoryPlugin';
 import { lookupFlightRoute } from './server/flightRoute';
 import { loadRainhamBoard, type LdbBoard } from './server/ldbDepartures';
 
@@ -263,6 +264,6 @@ function distanceBetween(latitudeOne: number, longitudeOne: number, latitudeTwo:
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env), parcelsProxy(env)],
+    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env), parcelsProxy(env), energyHistoryPlugin()],
   };
 });

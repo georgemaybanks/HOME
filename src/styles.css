@@ -19,6 +19,12 @@
   }
 }
 
+@layer utilities {
+  .stroke-gauge-green { stroke: #3f8f5a; }
+  .stroke-gauge-amber { stroke: #e2b340; }
+  .stroke-gauge-red { stroke: #c4473a; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

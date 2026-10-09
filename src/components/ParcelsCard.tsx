@@ -11,7 +11,7 @@ interface ParcelsCardProps {
 }
 
 export const ParcelsCard = ({ summary, status, error, onOpen, featured = false }: ParcelsCardProps) => (
-  <button className={cn('w-full rounded-md border border-line bg-white px-4 py-3 text-left', featured && 'px-5 py-4')} type="button" onClick={onOpen}>
+  <button className={cn('h-full w-full rounded-md border border-line bg-white px-4 py-3 text-left', featured && 'px-5 py-4')} type="button" onClick={onOpen}>
     <div className="flex items-center gap-2.5 text-sage">
       <Package size={22} />
       <strong className="text-lg font-bold text-ink">Parcels</strong>

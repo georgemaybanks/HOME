@@ -31,7 +31,7 @@ export const RoborockCard = ({ entities, callService }: RoborockCardProps) => {
   }
 
   return (
-    <article className="rounded-md border border-line bg-white px-4 py-3">
+    <article className="flex h-full flex-col justify-center rounded-md border border-line bg-white px-4 py-3">
       <div className="flex flex-wrap items-center gap-3">
         <Sparkles className="text-sage" size={22} />
         <strong className="text-lg font-bold text-ink">Roborock</strong>

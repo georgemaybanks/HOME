@@ -56,19 +56,15 @@ export const GlanceView = ({
   energyNotice,
   onOpenEnergy,
 }: GlanceViewProps) => (
-  <section className="grid h-full min-h-0 flex-1 grid-cols-2 gap-3 overflow-hidden max-md:h-auto max-md:grid-cols-1 max-md:overflow-visible" aria-label="Home">
-    <div className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 max-md:grid-rows-none">
-      <ParcelsCard summary={parcels} status={parcelStatus} error={parcelError} onOpen={onOpenParcels} featured />
-      <HomeLights lights={lights} callService={callService} />
-      <RainhamBoard departures={departures} status={railStatus} error={railError} notice={railNotice} />
+  <section className="grid h-full min-h-0 flex-1 grid-cols-2 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden max-md:h-auto max-md:grid-cols-1 max-md:grid-rows-none max-md:overflow-visible" aria-label="Home">
+    <ParcelsCard summary={parcels} status={parcelStatus} error={parcelError} onOpen={onOpenParcels} featured />
+    <div className="grid h-full min-h-0 grid-cols-2 gap-3 max-md:grid-cols-1">
+      <AlarmToggle alarm={alarm} callService={callService} />
+      <TemperatureCard outside={outsideTemperature} inside={insideTemperature} overnight={overnightLow} condition={weatherLabel} sunLabel={sunLabel} />
     </div>
-    <div className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 max-md:grid-rows-none">
-      <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
-        <AlarmToggle alarm={alarm} callService={callService} />
-        <TemperatureCard outside={outsideTemperature} inside={insideTemperature} overnight={overnightLow} condition={weatherLabel} sunLabel={sunLabel} />
-      </div>
-      <RoborockCard entities={roborockEntities} callService={callService} />
-      <EnergyCard today={energyToday} notice={energyNotice} onOpen={onOpenEnergy} />
-    </div>
+    <HomeLights lights={lights} callService={callService} />
+    <RoborockCard entities={roborockEntities} callService={callService} />
+    <RainhamBoard departures={departures} status={railStatus} error={railError} notice={railNotice} />
+    <EnergyCard today={energyToday} notice={energyNotice} onOpen={onOpenEnergy} />
   </section>
 )

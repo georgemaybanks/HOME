@@ -28,7 +28,9 @@ export const RainhamBoard = ({ departures, status, error, notice }: RainhamBoard
         <div className="min-h-0 flex-1 overflow-y-auto">
           {departures.map((departure) => <DepartureRow key={departure.id} departure={departure} />)}
         </div>
-      ) : <p className="my-3 text-base leading-snug text-muted">{empty}</p>}
+      ) : (
+        <p className="mt-3 text-base leading-snug text-muted">{empty}</p>
+      )}
     </article>
   );
 };

@@ -10,6 +10,11 @@ export default {
         paper: '#f3f4ee',
         clay: '#c9714d',
         signal: '#4b855f',
+        gauge: {
+          green: '#3f8f5a',
+          amber: '#e2b340',
+          red: '#c4473a',
+        },
         camera: '#252a25',
         sage: {
           DEFAULT: '#426e51',

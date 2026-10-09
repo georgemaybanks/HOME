@@ -7,7 +7,7 @@ interface TemperatureCardProps {
 }
 
 export const TemperatureCard = ({ outside, inside, overnight, condition, sunLabel }: TemperatureCardProps) => (
-  <article className="flex min-w-0 flex-col justify-center gap-2 rounded-md border border-line bg-white px-4 py-4">
+  <article className="flex h-full min-w-0 flex-col justify-center gap-2 rounded-md border border-line bg-white px-4 py-4">
     {condition || sunLabel ? <span className="font-mono text-xs font-medium tracking-wide text-muted">{[condition, sunLabel].filter(Boolean).join(' · ').toUpperCase()}</span> : null}
     <Reading label="Outside" value={outside} />
     <Reading label="Inside" value={inside} />
