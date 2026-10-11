@@ -213,6 +213,26 @@ const browserBoardUrl = (requestHost: string | undefined, base: string) => {
   return target.toString().replace(/\/$/, '');
 };
 
+function oscarProxy(env: Record<string, string>): Plugin {
+  const base = (env.OSCAR_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
+  const handler = (request: IncomingMessage, response: ServerResponse) => {
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'application/json');
+    response.setHeader('Cache-Control', 'no-store');
+    response.end(JSON.stringify({ url: browserBoardUrl(request.headers.host, base) }));
+  };
+
+  return {
+    name: 'oscar-board',
+    configureServer(server) {
+      server.middlewares.use('/api/oscar', handler);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use('/api/oscar', handler);
+    },
+  };
+}
+
 function parcelsProxy(env: Record<string, string>): Plugin {
   const base = (env.PARCELS_URL || '').replace(/\/$/, '');
   const passphrase = env.PARCELS_PASSPHRASE || '';
@@ -275,6 +295,6 @@ function distanceBetween(latitudeOne: number, longitudeOne: number, latitudeTwo:
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env), parcelsProxy(env), energyHistoryPlugin()],
+    plugins: [react(), cameraProxy(env.VITE_HA_URL, env.VITE_HA_TOKEN), aircraftProxy(env.HOME_LATITUDE, env.HOME_LONGITUDE), railProxy(env), parcelsProxy(env), oscarProxy(env), energyHistoryPlugin()],
   };
 });

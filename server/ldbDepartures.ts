@@ -1,7 +1,12 @@
 import type { RailDeparture } from './darwinFeed';
 
-const BOARD_URL = 'https://huxley2.azurewebsites.net/departures/RAI/40';
+const BOARD_URL = 'https://huxley2.azurewebsites.net/departures/RAI/40?expand=true';
 const HORIZON_MINUTES = 120;
+
+interface LdbPlace {
+  locationName?: string;
+  crs?: string;
+}
 
 interface LdbService {
   std?: string | null;
@@ -9,7 +14,9 @@ interface LdbService {
   platform?: string | null;
   isCancelled?: boolean;
   serviceID?: string;
-  destination?: { locationName?: string }[] | null;
+  origin?: LdbPlace[] | LdbPlace | null;
+  destination?: LdbPlace[] | LdbPlace | null;
+  subsequentCallingPoints?: { callingPoint?: LdbPlace[] | LdbPlace | null }[] | null;
 }
 
 interface LdbPayload {
@@ -35,7 +42,7 @@ export const loadRainhamBoard = async (): Promise<LdbBoard> => {
 
 const toDeparture = (service: LdbService, nowMinutes: number): RailDeparture[] => {
   const scheduled = service.std ?? '';
-  const destination = service.destination?.find((item) => item.locationName)?.locationName;
+  const destination = destinationName(service);
   if (!scheduled || !destination || !withinHorizon(scheduled, nowMinutes)) return [];
   const etd = service.etd ?? 'On time';
   const cancelled = Boolean(service.isCancelled) || etd === 'Cancelled';
@@ -52,6 +59,25 @@ const toDeparture = (service: LdbService, nowMinutes: number): RailDeparture[] =
     platform: service.platform && service.platform !== '0' ? service.platform : null,
     status,
   }];
+};
+
+const asPlaces = (value: LdbPlace[] | LdbPlace | null | undefined) => {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
+const placeName = (place?: LdbPlace | null) => {
+  const name = place?.locationName?.trim();
+  if (!name || place?.crs === 'RAI' || /^rainham\b/i.test(name)) return null;
+  return name;
+};
+
+const destinationName = (service: LdbService) => {
+  const calls = (service.subsequentCallingPoints ?? []).flatMap((group) => asPlaces(group.callingPoint));
+  const terminus = calls.map(placeName).filter((name): name is string => Boolean(name)).at(-1);
+  if (terminus) return terminus;
+  const origins = new Set(asPlaces(service.origin).map(placeName).filter((name): name is string => Boolean(name)));
+  return asPlaces(service.destination).map(placeName).find((name) => name && !origins.has(name)) ?? null;
 };
 
 const withinHorizon = (clock: string, nowMinutes: number) => {

@@ -293,38 +293,21 @@ const toDeparture = (service: Service, now: number) => {
 };
 
 const describeDestination = (stops: Stop[], rainham: Stop) => {
-  const ahead = stopsAfter(stops, rainham);
-  const explicit = [...ahead].reverse().find((stop) => stop.kind === 'dest');
-  const terminus = [...ahead].reverse().find((stop) => (stop.pta || stop.wta) && !stop.ptd && !stop.wtd);
-  const target = explicit ?? terminus ?? ahead.at(-1);
-  if (target) return stationName(target.tpl);
-  if (!rainham.ptd && !rainham.wtd) return 'Rainham';
-  return null;
+  const rainhamIndex = stops.indexOf(rainham);
+  const ahead = rainhamIndex === -1 ? [] : stops.slice(rainhamIndex + 1);
+  const afterRainham = [...ahead].reverse().find((stop) => stop.kind === 'dest' && destinationName(stop));
+  if (afterRainham) return destinationName(afterRainham);
+  const scheduledDestination = [...stops].reverse().find((stop) => stop.kind === 'dest' && destinationName(stop));
+  if (scheduledDestination) return destinationName(scheduledDestination);
+  const lastStop = [...ahead].reverse().find((stop) => destinationName(stop));
+  return lastStop ? destinationName(lastStop) : null;
 };
 
-const stopsAfter = (stops: Stop[], rainham: Stop) => {
-  const rainhamClock = stopClock(rainham);
-  if (!rainhamClock) return [];
-  const rainhamMinutes = clockMinutes(rainhamClock);
-  return stops
-    .filter((stop) => stop.tpl !== RAINHAM && !stop.passOnly && !stop.suppressed && stationName(stop.tpl))
-    .flatMap((stop) => {
-      const minutes = minutesAfter(stop, rainhamMinutes);
-      return minutes == null ? [] : [{ stop, minutes }];
-    })
-    .filter((item) => item.minutes > rainhamMinutes)
-    .sort((left, right) => left.minutes - right.minutes)
-    .map((item) => item.stop);
-};
-
-const stopClock = (stop: Stop) => stop.ptd || stop.wtd || stop.pta || stop.wta;
-
-const minutesAfter = (stop: Stop, rainhamMinutes: number) => {
-  const clock = stopClock(stop);
-  if (!clock) return null;
-  let minutes = clockMinutes(clock);
-  if (minutes + 12 * 60 < rainhamMinutes) minutes += 24 * 60;
-  return minutes;
+const destinationName = (stop: Stop) => {
+  if (stop.tpl === RAINHAM || stop.passOnly || stop.suppressed) return null;
+  const name = stationName(stop.tpl);
+  if (!name || /^rainham\b/i.test(name)) return null;
+  return name;
 };
 
 const readScheduleStops = (schedule: XmlNode): Stop[] => [
