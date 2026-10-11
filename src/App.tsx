@@ -90,6 +90,11 @@ export const App = () => {
             ) : null}
             {tab === 'energy' ? <EnergyBoard today={energy.today} week={energy.week} months={energy.months} averageMonthly={energy.averageMonthly} notice={energy.notice} /> : null}
             {tab === 'parcels' ? <ParcelsBoard url={parcels.summary?.boardUrl ?? null} /> : null}
+            {tab === 'oscar' ? (
+              <section className="flex min-h-0 flex-1" aria-label="Oscar">
+                <iframe className="min-h-0 w-full flex-1 rounded-md border border-line bg-white" src="https://oscar-chore-tracker.vercel.app" title="Oscar" />
+              </section>
+            ) : null}
             {tab === 'house' ? (
               <SectionBoard
                 label="House"
