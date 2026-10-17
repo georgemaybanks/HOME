@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  MEDICATION_CHANGED_EVENT,
   MEDICATION_CLEARS,
   MEDICATION_STORAGE_KEY,
   londonMedicationDay,
@@ -24,14 +25,19 @@ export const useMedicationReminder = () => {
 
   useEffect(() => {
     const sync = () => {
-      setNow(new Date())
+      const nextNow = new Date()
+      setNow(nextNow)
       setVisible(document.visibilityState === 'visible')
+      setClears(readStoredClears(londonMedicationDay(nextNow).date))
+      setReady(true)
     }
     const tick = window.setInterval(sync, 1000)
     document.addEventListener('visibilitychange', sync)
+    window.addEventListener(MEDICATION_CHANGED_EVENT, sync)
     return () => {
       window.clearInterval(tick)
       document.removeEventListener('visibilitychange', sync)
+      window.removeEventListener(MEDICATION_CHANGED_EVENT, sync)
     }
   }, [])
 

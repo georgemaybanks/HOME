@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { House, Pill, Wifi } from 'lucide-react'
 import { cn } from '../lib/cn'
-import { MEDICATION_STORAGE_KEY, medicationTakenToday } from '../lib/medicationReminder'
+import { MEDICATION_STORAGE_KEY, markMedicationTaken, medicationTakenToday } from '../lib/medicationReminder'
 import type { ConnectionStatus } from '../types/homeAssistant'
 
 interface DashboardTopBarProps {
@@ -22,11 +23,26 @@ const connectionTone: Record<ConnectionStatus, string> = {
 export const DashboardTopBar = ({ now, networkName, speedLabel, status, connectionLabel, onGoHome }: DashboardTopBarProps) => {
   const clockLabel = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(now)
   const dateLabel = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' }).format(now)
-  let medicationTaken = false
-  try {
-    medicationTaken = medicationTakenToday(now, window.localStorage.getItem(MEDICATION_STORAGE_KEY))
-  } catch {
-    medicationTaken = false
+  const readTaken = (when: Date) => {
+    try {
+      return medicationTakenToday(when, window.localStorage.getItem(MEDICATION_STORAGE_KEY))
+    } catch {
+      return false
+    }
+  }
+  const [medicationTaken, setMedicationTaken] = useState(() => readTaken(now))
+
+  useEffect(() => {
+    setMedicationTaken(readTaken(now))
+  }, [now])
+
+  const takeMedication = () => {
+    try {
+      markMedicationTaken(now)
+      setMedicationTaken(true)
+    } catch {
+      setMedicationTaken(false)
+    }
   }
 
   return (
@@ -36,10 +52,16 @@ export const DashboardTopBar = ({ now, networkName, speedLabel, status, connecti
         <span className="font-display text-lg font-extrabold leading-tight tracking-tight text-ink xl:text-xl">Casa <span className="text-clay">Edkins-Maybanks</span></span>
       </button>
       <div className="flex items-center gap-3">
-        <span className={cn('text-gauge-red', medicationTaken && 'text-gauge-green')} title={medicationTaken ? 'Medication taken' : 'Medication not taken'}>
+        <button
+          className={cn('grid h-11 w-11 place-items-center text-gauge-red', medicationTaken && 'text-gauge-green')}
+          type="button"
+          aria-pressed={medicationTaken}
+          title={medicationTaken ? 'Medication taken' : 'Mark medication taken'}
+          onClick={takeMedication}
+        >
           <Pill size={22} aria-hidden="true" />
-          <span className="sr-only">{medicationTaken ? 'Medication taken today' : 'Medication not taken today'}</span>
-        </span>
+          <span className="sr-only">{medicationTaken ? 'Medication taken today' : 'Mark medication taken'}</span>
+        </button>
         <time className="font-display text-clock font-bold tabular-nums tracking-tight max-md:text-3xl" dateTime={now.toISOString()}>{clockLabel}</time>
       </div>
       <div className="flex items-center justify-self-end gap-3.5 text-base text-muted">

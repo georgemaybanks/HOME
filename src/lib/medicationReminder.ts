@@ -1,6 +1,7 @@
 export const MEDICATION_CLEARS = 3
 export const MEDICATION_HOUR = 8
 export const MEDICATION_STORAGE_KEY = 'casa-medication-clears'
+export const MEDICATION_CHANGED_EVENT = 'casa-medication-changed'
 
 export interface MedicationDay {
   date: string
@@ -43,3 +44,9 @@ export const medicationRecord = (date: string, clears: number) =>
 
 export const medicationTakenToday = (now: Date, stored: string | null) =>
   readClears(stored, londonMedicationDay(now).date) >= MEDICATION_CLEARS
+
+export const markMedicationTaken = (now: Date) => {
+  const day = londonMedicationDay(now)
+  window.localStorage.setItem(MEDICATION_STORAGE_KEY, medicationRecord(day.date, MEDICATION_CLEARS))
+  window.dispatchEvent(new Event(MEDICATION_CHANGED_EVENT))
+}
