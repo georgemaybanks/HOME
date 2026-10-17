@@ -25,6 +25,22 @@
   .stroke-gauge-red { stroke: #c4473a; }
 }
 
+@keyframes medication-flash {
+  0%, 72%, 100% { background-color: #c4473a; }
+  80% { background-color: #e2b340; }
+}
+
+.medication-screen {
+  animation: medication-flash 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medication-screen {
+    animation: none;
+    background-color: #c4473a;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

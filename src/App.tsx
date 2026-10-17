@@ -6,6 +6,7 @@ import { DashboardTopBar } from './components/DashboardTopBar';
 import { EnergyBoard } from './components/EnergyBoard';
 import { GlanceView } from './components/GlanceView';
 import { LightBoard } from './components/LightBoard';
+import { MedicationReminder } from './components/MedicationReminder';
 import { OscarBoard } from './components/OscarBoard';
 import { ParcelsBoard } from './components/ParcelsBoard';
 import { RadarScope } from './components/RadarScope';
@@ -108,6 +109,7 @@ export const App = () => {
           </div>
           <DashboardDock tab={tab} onSelectTab={selectTab} />
         </main>
+        <MedicationReminder />
       </VantaBackground>
     </Suspense>
   );
