@@ -2,6 +2,7 @@ import type { RailDeparture } from './darwinFeed';
 
 const BOARD_URL = 'https://huxley2.azurewebsites.net/departures/RAI/40?expand=true';
 const HORIZON_MINUTES = 120;
+const FRESH_MS = 90_000;
 
 interface LdbPlace {
   locationName?: string;
@@ -29,6 +30,13 @@ export interface LdbBoard {
   notice: string | null;
   departures: RailDeparture[];
 }
+
+export const usableDepartures = (board: LdbBoard | null, now = Date.now()): RailDeparture[] | null => {
+  if (!board || now - board.fetchedAt > FRESH_MS) return null;
+  const nowMinutes = londonNowMinutes(new Date(now));
+  const current = board.departures.filter((departure) => withinHorizon(departure.scheduled, nowMinutes));
+  return current.length ? current : null;
+};
 
 export const loadRainhamBoard = async (): Promise<LdbBoard> => {
   const response = await fetch(BOARD_URL, { headers: { accept: 'application/json', 'user-agent': 'CasaMaybanksDashboard/0.1' } });
@@ -88,8 +96,8 @@ const withinHorizon = (clock: string, nowMinutes: number) => {
   return ahead >= -2 && ahead <= HORIZON_MINUTES;
 };
 
-const londonNowMinutes = () => {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+const londonNowMinutes = (now = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
   return value('hour') * 60 + value('minute');
 };

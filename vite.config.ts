@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import { startDarwinFeed } from './server/darwinFeed';
 import { energyHistoryPlugin } from './server/energyHistoryPlugin';
 import { lookupFlightRoute } from './server/flightRoute';
-import { loadRainhamBoard, type LdbBoard } from './server/ldbDepartures';
+import { loadRainhamBoard, usableDepartures, type LdbBoard } from './server/ldbDepartures';
 
 interface AircraftRecord {
   hex?: string;
@@ -169,11 +169,12 @@ function railProxy(env: Record<string, string>): Plugin {
       try {
         await refreshBoard();
       } catch {
-        board = board ?? null;
+        // A failed refresh must not keep serving this morning's board.
       }
     }
     const darwin = ensure().snapshot();
-    const live = board && board.departures.length ? board : null;
+    const departures = usableDepartures(board) ?? darwin.departures;
+    const live = departures === darwin.departures ? null : board;
     response.statusCode = 200;
     response.setHeader('Content-Type', 'application/json');
     response.setHeader('Cache-Control', 'no-store');
@@ -181,7 +182,7 @@ function railProxy(env: Record<string, string>): Plugin {
       status: live ? 'connected' : darwin.status,
       error: live ? null : darwin.error,
       notice: live ? live.notice : darwin.notice,
-      departures: live ? live.departures : darwin.departures,
+      departures,
     }));
   };
 
