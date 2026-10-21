@@ -29,19 +29,19 @@ export const HomeLights = ({ lights, callService }: HomeLightsProps) => {
   }
 
   return (
-    <article className="h-full rounded-md border border-line bg-white px-4 py-3">
+    <article className="shrink-0 rounded-md border border-line bg-white px-4 py-2.5">
       <div className="flex items-center gap-2.5 text-sage">
         <Lightbulb size={22} />
         <strong className="text-lg font-bold text-ink">Lights</strong>
         <span className="ml-auto font-mono text-xs text-muted">{onCount ? `${onCount} on` : 'All off'}</span>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         {lights.map((light) => {
           const on = light.state === 'on'
           return (
             <button
               key={light.entity_id}
-              className={cn('min-h-12 rounded-md px-3 text-left text-base font-semibold disabled:cursor-wait disabled:opacity-50', on ? 'bg-sage text-paper' : 'bg-sage-soft text-sage-deep')}
+              className={cn('min-h-11 rounded-md px-3 text-left text-sm font-semibold leading-tight disabled:cursor-wait disabled:opacity-50', on ? 'bg-sage text-paper' : 'bg-sage-soft text-sage-deep')}
               type="button"
               aria-pressed={on}
               disabled={busyId === light.entity_id || light.state === 'unavailable'}

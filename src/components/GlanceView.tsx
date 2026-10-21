@@ -1,10 +1,12 @@
 import { AlarmToggle } from './AlarmToggle'
+import { BinsCard } from './BinsCard'
 import { EnergyCard } from './EnergyCard'
 import { HomeLights } from './HomeLights'
 import { ParcelsCard } from './ParcelsCard'
 import { RainhamBoard } from './RainhamBoard'
 import { RoborockCard } from './RoborockCard'
 import { TemperatureCard } from './TemperatureCard'
+import type { BinRound } from '../lib/bins'
 import type { EnergyUsage } from '../hooks/useEnergy'
 import type { ParcelSummary } from '../hooks/useParcels'
 import type { RailDeparture } from '../hooks/useRailBoard'
@@ -32,6 +34,9 @@ interface GlanceViewProps {
   energyToday: EnergyUsage
   energyNotice: string
   onOpenEnergy: () => void
+  now: Date
+  bins: BinRound | null
+  binNotice: string
 }
 
 export const GlanceView = ({
@@ -55,16 +60,26 @@ export const GlanceView = ({
   energyToday,
   energyNotice,
   onOpenEnergy,
+  now,
+  bins,
+  binNotice,
 }: GlanceViewProps) => (
-  <section className="grid h-full min-h-0 flex-1 grid-cols-2 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden max-md:h-auto max-md:grid-cols-1 max-md:grid-rows-none max-md:overflow-visible" aria-label="Home">
-    <ParcelsCard summary={parcels} status={parcelStatus} error={parcelError} onOpen={onOpenParcels} featured />
-    <div className="grid h-full min-h-0 grid-cols-2 gap-3 max-md:grid-cols-1">
-      <AlarmToggle alarm={alarm} callService={callService} />
-      <TemperatureCard outside={outsideTemperature} inside={insideTemperature} overnight={overnightLow} condition={weatherLabel} sunLabel={sunLabel} />
+  <section className="grid h-full min-h-0 flex-1 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-3 overflow-hidden max-md:h-auto max-md:grid-cols-1 max-md:overflow-visible" aria-label="Home">
+    <div className="flex min-h-0 flex-col gap-3">
+      <ParcelsCard summary={parcels} status={parcelStatus} error={parcelError} onOpen={onOpenParcels} featured />
+      <HomeLights lights={lights} callService={callService} />
+      <div className="min-h-0 flex-1 max-md:flex-none">
+        <RainhamBoard departures={departures} status={railStatus} error={railError} notice={railNotice} />
+      </div>
     </div>
-    <HomeLights lights={lights} callService={callService} />
-    <RoborockCard entities={roborockEntities} callService={callService} />
-    <RainhamBoard departures={departures} status={railStatus} error={railError} notice={railNotice} />
-    <EnergyCard today={energyToday} notice={energyNotice} onOpen={onOpenEnergy} />
+    <div className="grid h-full min-h-0 grid-cols-2 grid-rows-3 gap-3 max-md:h-auto max-md:grid-rows-none">
+      <BinsCard now={now} round={bins} notice={binNotice} />
+      <AlarmToggle alarm={alarm} callService={callService} />
+      <RoborockCard entities={roborockEntities} callService={callService} />
+      <TemperatureCard outside={outsideTemperature} inside={insideTemperature} overnight={overnightLow} condition={weatherLabel} sunLabel={sunLabel} />
+      <div className="col-span-2 min-h-0">
+        <EnergyCard today={energyToday} notice={energyNotice} onOpen={onOpenEnergy} />
+      </div>
+    </div>
   </section>
 )

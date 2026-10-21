@@ -10,7 +10,7 @@ interface RoborockCardProps {
   callService: CallService
 }
 
-const actionClass = 'min-h-12 rounded-md px-4 text-base font-bold disabled:cursor-wait disabled:opacity-50'
+const actionClass = 'min-h-11 rounded-md px-3 text-sm font-bold disabled:cursor-wait disabled:opacity-50'
 
 export const RoborockCard = ({ entities, callService }: RoborockCardProps) => {
   const summary = roborockSummary(entities)
@@ -31,25 +31,25 @@ export const RoborockCard = ({ entities, callService }: RoborockCardProps) => {
   }
 
   return (
-    <article className="flex h-full flex-col justify-center rounded-md border border-line bg-white px-4 py-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <Sparkles className="text-sage" size={22} />
-        <strong className="text-lg font-bold text-ink">Roborock</strong>
-        <span className="font-mono text-xs text-muted">{summary.status}</span>
-        <div className="ml-auto flex flex-wrap gap-2">
-          {summary.running ? (
-            <button className={cn(actionClass, 'bg-sage-soft text-sage-deep')} type="button" disabled={busy} onClick={() => void run(() => callService('vacuum', 'pause', { entity_id: VACUUM_ID }))}>Pause</button>
-          ) : (
-            <button className={cn(actionClass, 'bg-sage text-paper')} type="button" disabled={busy || !summary.vacuum} onClick={() => void run(() => startVacAndMop(callService))}>Vac and mop</button>
-          )}
-          {summary.running || summary.paused ? (
-            <button className={cn(actionClass, 'bg-sage-soft text-sage-deep')} type="button" disabled={busy} onClick={() => void run(() => callService('vacuum', 'return_to_base', { entity_id: VACUUM_ID }))}>Dock</button>
-          ) : null}
-        </div>
+    <article className="flex h-full min-h-0 flex-col justify-between rounded-md border border-line bg-white px-3 py-3 max-md:h-auto">
+      <div className="flex items-center gap-2">
+        <Sparkles className="shrink-0 text-sage" size={16} />
+        <strong className="truncate text-sm font-bold text-ink">Roborock</strong>
+        <span className="ml-auto shrink-0 font-mono text-xs text-muted">{summary.status}</span>
+      </div>
+      <div className="mt-2 flex gap-2">
+        {summary.running ? (
+          <button className={cn(actionClass, 'flex-1 bg-sage-soft text-sage-deep')} type="button" disabled={busy} onClick={() => void run(() => callService('vacuum', 'pause', { entity_id: VACUUM_ID }))}>Pause</button>
+        ) : (
+          <button className={cn(actionClass, 'flex-1 bg-sage text-paper')} type="button" disabled={busy || !summary.vacuum} onClick={() => void run(() => startVacAndMop(callService))}>Vac and mop</button>
+        )}
+        {summary.running || summary.paused ? (
+          <button className={cn(actionClass, 'bg-sage-soft text-sage-deep')} type="button" disabled={busy} onClick={() => void run(() => callService('vacuum', 'return_to_base', { entity_id: VACUUM_ID }))}>Dock</button>
+        ) : null}
       </div>
       {warnings.length ? (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-          {warnings.map((item) => <span key={item.label} className="text-base font-semibold text-clay">{item.label} {item.value}</span>)}
+          {warnings.map((item) => <span key={item.label} className="text-sm font-semibold text-clay">{item.label} {item.value}</span>)}
         </div>
       ) : null}
       {error ? <p className="mt-2 text-sm text-clay" role="status">{error}</p> : null}

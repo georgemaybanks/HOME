@@ -11,7 +11,7 @@ interface ParcelsCardProps {
 }
 
 export const ParcelsCard = ({ summary, status, error, onOpen, featured = false }: ParcelsCardProps) => (
-  <button className={cn('h-full w-full rounded-md border border-line bg-white px-4 py-3 text-left', featured && 'px-5 py-4')} type="button" onClick={onOpen}>
+  <button className="h-auto w-full rounded-md border border-line bg-white px-4 py-3 text-left" type="button" onClick={onOpen}>
     <div className="flex items-center gap-2.5 text-sage">
       <Package size={22} />
       <strong className="text-lg font-bold text-ink">Parcels</strong>
@@ -21,7 +21,7 @@ export const ParcelsCard = ({ summary, status, error, onOpen, featured = false }
     {summary ? (
       <>
         {featured ? (
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="mt-3 grid grid-cols-3 gap-3">
             <Reading label="On order" value={summary.onOrder} featured />
             <Reading label="Out for delivery" value={summary.outForDelivery} featured />
             <Reading label="Ready to collect" value={summary.toCollect} featured />
@@ -34,7 +34,7 @@ export const ParcelsCard = ({ summary, status, error, onOpen, featured = false }
           </div>
         )}
         {summary.needsReview ? <p className="mt-1 text-sm text-clay">{summary.needsReview} to review</p> : null}
-        {summary.collections.slice(0, 3).map((place) => (
+        {summary.collections.slice(0, featured ? 1 : 3).map((place) => (
           <p key={place.id} className="mt-1 truncate text-sm text-muted">
             {place.name || place.title}
             {place.address ? ` — ${place.address}` : ''}
@@ -48,6 +48,6 @@ export const ParcelsCard = ({ summary, status, error, onOpen, featured = false }
 const Reading = ({ label, value, featured = false }: { label: string; value: number; featured?: boolean }) => (
   <div className={cn('flex min-h-8 items-baseline justify-between gap-3', featured && 'flex-col items-start gap-1')}>
     <span className="font-mono text-xs font-medium tracking-wide text-muted">{label.toUpperCase()}</span>
-    <strong className={cn('font-display font-bold tracking-tight text-ink', featured ? 'text-4xl' : 'text-2xl')}>{value}</strong>
+    <strong className={cn('font-display font-bold tracking-tight text-ink', featured ? 'text-3xl' : 'text-2xl')}>{value}</strong>
   </div>
 );

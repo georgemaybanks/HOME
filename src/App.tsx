@@ -12,6 +12,7 @@ import { ParcelsBoard } from './components/ParcelsBoard';
 import { RadarScope } from './components/RadarScope';
 import { SectionBoard } from './components/SectionBoard';
 import { SpeakerBoard } from './components/SpeakerBoard';
+import { useBins } from './hooks/useBins';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useEnergy } from './hooks/useEnergy';
 import { useParcels } from './hooks/useParcels';
@@ -22,6 +23,7 @@ const VantaBackground = lazy(() => import('./components/VantaBackground.jsx').th
 export const App = () => {
   const dashboard = useDashboardData();
   const parcels = useParcels();
+  const bins = useBins();
   const energy = useEnergy();
   const [tab, setTab] = useState<DashboardTab>('overview');
   const selectTab = useCallback((nextTab: DashboardTab) => setTab(nextTab), []);
@@ -63,6 +65,9 @@ export const App = () => {
                 energyToday={energy.today}
                 energyNotice={energy.notice}
                 onOpenEnergy={() => setTab('energy')}
+                now={dashboard.now}
+                bins={bins.round}
+                binNotice={bins.notice}
               />
             ) : null}
             {tab === 'cameras' ? <CameraBoard cameras={dashboard.cameraEntities} controls={dashboard.cameraControls} callService={dashboard.callService} /> : null}

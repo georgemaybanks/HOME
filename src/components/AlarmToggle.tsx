@@ -13,7 +13,7 @@ export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
   const asking = pending === 'armed_away' ? 'Arming' : 'Disarming'
 
   return (
-    <article className="flex h-full min-w-0 flex-col justify-center rounded-md border border-line bg-white px-4 py-4">
+    <article className="flex h-full min-h-0 flex-col justify-center gap-2 rounded-md border border-line bg-white px-3 py-3 max-md:h-auto">
       <span className="font-mono text-xs font-medium tracking-wide text-muted">ALARM</span>
       <button
         type="button"
@@ -22,9 +22,9 @@ export const AlarmToggle = ({ alarm, callService }: AlarmToggleProps) => {
         aria-label={armed ? 'Alarm armed' : 'Alarm disarmed'}
         disabled={!ready || busy}
         onClick={() => void command(armed ? 'alarm_disarm' : 'alarm_arm_away')}
-        className={cn('relative mt-3 grid h-12 grid-cols-2 items-center overflow-hidden rounded-full text-base font-bold disabled:cursor-wait disabled:opacity-50', armed ? 'bg-clay text-white' : 'bg-signal text-white')}
+        className={cn('relative grid h-11 w-full grid-cols-2 items-center overflow-hidden rounded-full text-sm font-bold disabled:cursor-wait disabled:opacity-50', armed ? 'bg-clay text-white' : 'bg-signal text-white')}
       >
-        <span className={cn('absolute top-1 h-10 w-[calc(50%-0.25rem)] rounded-full bg-white', armed ? 'left-1/2' : 'left-1')} />
+        <span className={cn('absolute top-1 h-9 w-[calc(50%-0.25rem)] rounded-full bg-white', armed ? 'left-1/2' : 'left-1')} />
         <span className={cn('relative z-10', !armed ? 'text-signal' : 'text-white')}>Disarmed</span>
         <span className={cn('relative z-10', armed ? 'text-clay' : 'text-white')}>Armed</span>
       </button>

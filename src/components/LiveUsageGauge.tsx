@@ -33,13 +33,13 @@ const useLiveUsage = (value: number | null) => {
   return value ?? placeholder
 }
 
-export const LiveUsageGauge = ({ value = null }: { value?: number | null }) => {
+export const LiveUsageGauge = ({ value = null, plain = false }: { value?: number | null; plain?: boolean }) => {
   const reading = useLiveUsage(value)
   const needle = point(180 - (reading / 100) * 180)
   return (
-    <div className="flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-sage-mist px-1 py-3 text-center" aria-label={`Live usage ${reading}%`}>
+    <div className={plain ? 'flex w-24 shrink-0 flex-col items-center justify-center text-center' : 'flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-sage-mist px-1 py-3 text-center'} aria-label={`Live usage ${reading}%`}>
       <span className="font-mono text-xs font-medium tracking-wide text-muted">LIVE USAGE</span>
-      <svg viewBox="0 0 120 74" className="w-full" role="img">
+      <svg viewBox="0 0 120 74" className={plain ? 'h-12 w-24' : 'w-full'} role="img">
         {zones.map((zone) => (
           <path key={zone.color} d={arc(zone.start, zone.end)} fill="none" strokeWidth="9" strokeLinecap="butt" className={zone.color} />
         ))}

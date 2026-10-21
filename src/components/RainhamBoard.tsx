@@ -17,7 +17,7 @@ export const RainhamBoard = ({ departures, status, error, notice }: RainhamBoard
       : 'Waiting for the next Rainham update.';
 
   return (
-    <article className="flex h-full min-h-0 min-w-0 flex-col rounded-md border border-line bg-white px-4 pb-2 pt-3.5">
+    <article className="flex h-full min-h-0 min-w-0 flex-col rounded-md border border-line bg-white px-4 pb-2 pt-3.5 max-md:h-auto max-md:min-h-64">
       <div className="flex items-center gap-2.5 text-sage">
         <TrainFront size={22} />
         <strong className="text-lg font-bold text-ink">Rainham</strong>
