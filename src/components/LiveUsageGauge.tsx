@@ -37,16 +37,16 @@ export const LiveUsageGauge = ({ value = null, plain = false }: { value?: number
   const reading = useLiveUsage(value)
   const needle = point(180 - (reading / 100) * 180)
   return (
-    <div className={plain ? 'flex w-24 shrink-0 flex-col items-center justify-center text-center' : 'flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-sage-mist px-1 py-3 text-center'} aria-label={`Live usage ${reading}%`}>
+    <div className={plain ? 'flex w-36 shrink-0 flex-col items-center justify-center text-center' : 'flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-sage-mist px-1 py-3 text-center'} aria-label={`Live usage ${reading}%`}>
       <span className="font-mono text-xs font-medium tracking-wide text-muted">LIVE USAGE</span>
-      <svg viewBox="0 0 120 74" className={plain ? 'h-12 w-24' : 'w-full'} role="img">
+      <svg viewBox="0 0 120 74" className={plain ? 'h-20 w-36' : 'w-full'} role="img">
         {zones.map((zone) => (
           <path key={zone.color} d={arc(zone.start, zone.end)} fill="none" strokeWidth="9" strokeLinecap="butt" className={zone.color} />
         ))}
         <line x1={CX} y1={CY} x2={needle[0]} y2={needle[1]} className="stroke-ink" strokeWidth="2.5" strokeLinecap="round" />
         <circle cx={CX} cy={CY} r="4" className="fill-ink" />
       </svg>
-      <strong className="font-display text-xl font-bold tracking-tight text-ink">{reading}%</strong>
+      <strong className={plain ? 'font-display text-3xl font-extrabold tracking-tight text-ink' : 'font-display text-xl font-bold tracking-tight text-ink'}>{reading}%</strong>
     </div>
   )
 }

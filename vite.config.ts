@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { startDarwinFeed } from './server/darwinFeed';
+import { rewriteHlsPlaylist } from './src/lib/cameraStream';
 import { binsPlugin } from './server/binsPlugin';
 import { energyHistoryPlugin } from './server/energyHistoryPlugin';
 import { lookupFlightRoute } from './server/flightRoute';
@@ -105,14 +106,25 @@ function cameraProxy(baseUrl: string, accessToken: string): Plugin {
     const controller = new AbortController();
     request.on('close', () => controller.abort());
     try {
+      const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+      if (request.headers.range) headers.Range = request.headers.range;
+      if (request.headers.accept) headers.Accept = String(request.headers.accept);
       const upstream = await fetch(new URL(path, baseUrl), {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers,
         signal: controller.signal,
       });
       response.statusCode = upstream.status;
-      const contentType = upstream.headers.get('content-type');
+      const contentType = upstream.headers.get('content-type') ?? '';
       if (contentType) response.setHeader('Content-Type', contentType);
+      const contentRange = upstream.headers.get('content-range');
+      if (contentRange) response.setHeader('Content-Range', contentRange);
+      if (upstream.headers.get('accept-ranges')) response.setHeader('Accept-Ranges', 'bytes');
       response.setHeader('Cache-Control', 'no-store');
+      const playlist = contentType.includes('mpegurl') || path.includes('.m3u8');
+      if (playlist) {
+        response.end(rewriteHlsPlaylist(await upstream.text()));
+        return;
+      }
       if (!upstream.body) {
         response.end();
         return;

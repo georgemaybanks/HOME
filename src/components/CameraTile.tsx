@@ -15,7 +15,7 @@ interface CameraTileProps {
   streamEntityId?: string
 }
 
-type PictureMode = 'stream' | 'snapshot' | 'unavailable'
+type PictureMode = 'stream' | 'mjpeg' | 'snapshot' | 'unavailable'
 
 export function CameraTile({ entity, nameOnly = false, playOnPress = false, webrtc = false, callService, streamEntityId }: CameraTileProps) {
   const imageRef = useRef<HTMLImageElement>(null)
@@ -42,24 +42,34 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
   }, [expanded])
 
   const handlePictureError = useCallback(() => {
-    setMode((current) => (current === 'stream' ? 'snapshot' : 'unavailable'))
-  }, [])
+    setMode((current) => {
+      if (current === 'stream' && webrtc) return 'mjpeg'
+      if (current === 'stream' || current === 'mjpeg') return 'snapshot'
+      return 'unavailable'
+    })
+  }, [webrtc])
 
   useEffect(() => {
-    if (mode !== 'stream' || webrtc) return undefined
+    if (mode === 'snapshot' || mode === 'unavailable' || (mode === 'stream' && webrtc)) return undefined
     const timer = window.setTimeout(() => {
-      if (!imageRef.current || imageRef.current.naturalWidth === 0) setMode('snapshot')
-    }, 4000)
+      if (!imageRef.current || imageRef.current.naturalWidth === 0) handlePictureError()
+    }, 8000)
     return () => window.clearTimeout(timer)
-  }, [mode, entity.entity_id, webrtc])
+  }, [handlePictureError, mode, entity.entity_id, webrtc])
 
   useEffect(() => {
     if (mode !== 'snapshot') return undefined
-    const timer = window.setInterval(() => setFrame((current) => current + 1), 2000)
+    const timer = window.setInterval(() => setFrame((current) => current + 1), webrtc ? 5000 : 2000)
     return () => window.clearInterval(timer)
-  }, [mode])
+  }, [mode, webrtc])
 
-  const source = mode === 'stream'
+  useEffect(() => {
+    if (!webrtc || (mode !== 'snapshot' && mode !== 'unavailable')) return undefined
+    const timer = window.setTimeout(() => setMode('stream'), 20000)
+    return () => window.clearTimeout(timer)
+  }, [mode, webrtc])
+
+  const source = mode === 'mjpeg' || (mode === 'stream' && !webrtc)
     ? `/api/camera_proxy_stream/${encodedId}`
     : mode === 'snapshot'
       ? `/api/camera_proxy/${encodedId}?frame=${frame}`
@@ -95,8 +105,8 @@ export function CameraTile({ entity, nameOnly = false, playOnPress = false, webr
           <Picture imageRef={imageRef} source={source} mode={mode} name={name} entityId={entity.entity_id} onError={handlePictureError} />
         )}
         <span className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded bg-camera/80 px-2 py-1.5 font-mono text-xs text-white">
-          <i className={mode === 'stream' ? 'h-2 w-2 rounded-full bg-signal' : 'h-2 w-2 rounded-full bg-orange-400'} />
-          {waking ? 'WAKING' : mode === 'stream' ? 'LIVE' : streamEntityId ? 'SNAPSHOT' : webrtc && mode !== 'unavailable' ? 'PAUSED' : mode === 'snapshot' ? 'SNAPSHOT' : 'NO IMAGE'}
+          <i className={mode === 'stream' || mode === 'mjpeg' ? 'h-2 w-2 rounded-full bg-signal' : 'h-2 w-2 rounded-full bg-orange-400'} />
+          {waking ? 'WAKING' : mode === 'stream' || mode === 'mjpeg' ? 'LIVE' : mode === 'snapshot' || streamEntityId ? 'SNAPSHOT' : webrtc && mode !== 'unavailable' ? 'PAUSED' : 'NO IMAGE'}
         </span>
         <button className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center rounded bg-camera/80 text-white" type="button" aria-label={expanded ? `Exit full screen ${name}` : `Full screen ${name}`} onClick={() => setExpanded((current) => !current)}>
           {expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}

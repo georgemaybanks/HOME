@@ -1,5 +1,27 @@
 import type { EntityState } from '../types/homeAssistant'
 
+const POD_CONNECTED = new Set([
+  'charging',
+  'connected-waiting-for-schedule',
+  'suspended-ev',
+  'suspended-evse',
+  'charge-override',
+])
+
+const podLabel = (entity: EntityState) =>
+  `${entity.entity_id} ${typeof entity.attributes.friendly_name === 'string' ? entity.attributes.friendly_name : ''}`.toLowerCase()
+
+const isPodPoint = (entity: EntityState) => {
+  const label = podLabel(entity)
+  return entity.attributes.integration === 'pod_point' || label.includes('pod_point') || label.includes('podpoint') || label.includes('pod point') || label.includes('psl_')
+}
+
+export const podPointCarConnected = (entities: EntityState[]) => {
+  const cables = entities.filter((entity) => isPodPoint(entity) && entity.entity_id.startsWith('binary_sensor.') && (entity.entity_id.endsWith('_cable_status') || podLabel(entity).includes('cable status')))
+  if (cables.length) return cables.some((entity) => entity.state === 'on')
+  return entities.some((entity) => isPodPoint(entity) && entity.entity_id.startsWith('sensor.') && entity.entity_id.endsWith('_status') && POD_CONNECTED.has(entity.state))
+}
+
 export const chargerEntityName = (entity: EntityState) => entity.attributes.friendly_name ?? 'Charger'
 
 export const chargerUnit = (entity: EntityState) => (

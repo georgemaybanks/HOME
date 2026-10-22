@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { podPointCarConnected } from '../lib/charger'
 import type { EntityState } from '../types/homeAssistant'
 import { useHomeAssistant } from './useHomeAssistant'
 
@@ -344,7 +345,7 @@ export function useEnergy() {
     const connected = electric.cost != null || gas.cost != null || electric.kwh != null || gas.kwh != null
     const waitingForToday = connected && electric.period !== 'today' && gas.period !== 'today'
     return {
-      today: { electric, gas, points, carConnected: false, ...averageOf(costs), ...monthPrediction(persisted) },
+      today: { electric, gas, points, carConnected: podPointCarConnected(Object.values(entities)), ...averageOf(costs), ...monthPrediction(persisted) },
       week: buildWeek(persisted, electric, gas),
       ...buildMonths(persisted),
       notice: !connected
@@ -353,5 +354,5 @@ export function useEnergy() {
           ? 'Today\'s reading has not arrived. Showing the latest complete day.'
           : '',
     }
-  }, [reading])
+  }, [entities, reading])
 }
